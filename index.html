@@ -254,8 +254,8 @@
             showMessage('Loading categories...', 'info');
             const { data, error } = await supabase
                 .from('categories')
-                .select('id, name') // Assuming your categories table has 'id' and 'name'
-                .order('name', { ascending: true }); // Order by name for better UX
+                .select('id, title') // Assuming your categories table has 'id' and 'name'
+                .order('title', { ascending: true }); // Order by name for better UX
 
             if (error) {
                 console.error('Error fetching categories:', error.message);
@@ -266,7 +266,7 @@
             data.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                option.textContent = category.name;
+                option.textContent = category.title;
                 categorySelect.appendChild(option);
             });
             showMessage('Categories loaded.', 'success');
