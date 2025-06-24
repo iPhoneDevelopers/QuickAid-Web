@@ -216,10 +216,10 @@
     <script>
         // --- Supabase Configuration ---
         // IMPORTANT: Replace with your actual Supabase URL and Anon Key
-        const SUPABASE_URL = 'filhobbagaommhywosor.supabase.com';
+        const SUPABASE_URL = 'https://filhobbagaommhywosor.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbGhvYmJhZ2FvbW1oeXdvc29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNzA4OTksImV4cCI6MjA2NTY0Njg5OX0.e02Xve63kjUjtwwHMo3M4TuWx3h_xlnS89c1GEILUUE';
 
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- DOM Elements ---
         const ailmentForm = document.getElementById('ailmentForm');
@@ -258,8 +258,8 @@
             showMessage('Loading categories...', 'info');
             const { data, error } = await supabase
                 .from('categories')
-                .select('id, name') // Assuming your categories table has 'id' and 'name'
-                .order('name', { ascending: true }); // Order by name for better UX
+                .select('id, title') // Assuming your categories table has 'id' and 'name'
+                .order('title', { ascending: true }); // Order by name for better UX
 
             if (error) {
                 console.error('Error fetching categories:', error.message);
@@ -270,7 +270,7 @@
             data.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                option.textContent = category.name;
+                option.textContent = category.title;
                 categorySelect.appendChild(option);
             });
             showMessage('Categories loaded.', 'success');
