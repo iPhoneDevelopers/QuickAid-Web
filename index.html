@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Ailment</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+            color: #343a40;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            max-width: 900px;
+            margin: auto;
+            border: 1px solid #e9ecef;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        input[type="text"],
+        input[type="url"],
+        input[type="number"],
+        textarea,
+        select {
+            width: calc(100% - 24px); /* Account for padding and border */
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #007bff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2); /* Make checkbox slightly larger */
+        }
+        .steps-container {
+            border: 1px dashed #a0aec0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+            background-color: #f0f4f8;
+        }
+        .step-item {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .step-item:last-child {
+            margin-bottom: 0;
+        }
+        .step-item h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .step-item .remove-step {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+        .step-item .remove-step:hover {
+            background-color: #c82333;
+        }
+        button[type="submit"], #addStep {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-top: 25px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        button[type="submit"]:hover, #addStep:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        button[type="submit"]:active, #addStep:active {
+            transform: translateY(0);
+        }
+        #addStep {
+            background-color: #28a745;
+            margin-right: 10px;
+        }
+        #addStep:hover {
+            background-color: #218838;
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .message {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid transparent;
+            display: none; /* Hidden by default */
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add New Ailment</h1>
+        <form id="ailmentForm">
+            <div class="form-group">
+                <label for="category_id">Category:</label>
+                <select id="category_id" required>
+                    <option value="">Select a Category</option>
+                    </select>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" required placeholder="e.g., Common Cold Treatment">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" rows="4" placeholder="Brief description of the ailment and its treatment."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="video_url">Video URL:</label>
+                <input type="url" id="video_url" placeholder="e.g., https://youtube.com/myvideo">
+            </div>
+
+            <div class="form-group">
+                <label for="thumbnail">Thumbnail URL:</label>
+                <input type="url" id="thumbnail" placeholder="e.g., https://example.com/thumbnail.jpg">
+            </div>
+
+            <div class="form-group">
+                <label for="warning_text">Warning Text:</label>
+                <textarea id="warning_text" rows="2" placeholder="Any warnings or precautions."></textarea>
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="isActive" checked>
+                <label for="isActive" style="display: inline-block;">Is Active</label>
+            </div>
+
+            <h2>Steps for Treatment</h2>
+            <div id="stepsContainer" class="steps-container">
+                </div>
+            <div class="button-group" style="text-align: left;">
+                <button type="button" id="addStep">Add New Step</button>
+            </div>
+
+            <div class="button-group">
+                <button type="submit">Submit Ailment</button>
+            </div>
+
+            <div id="message" class="message"></div>
+        </form>
+    </div>
+
+    <script>
+        // --- Supabase Configuration ---
+        // IMPORTANT: Replace with your actual Supabase URL and Anon Key
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- DOM Elements ---
+        const ailmentForm = document.getElementById('ailmentForm');
+        const stepsContainer = document.getElementById('stepsContainer');
+        const addStepButton = document.getElementById('addStep');
+        const categorySelect = document.getElementById('category_id');
+        const messageDiv = document.getElementById('message');
+
+        let stepCounter = 0; // To keep track of step IDs for dynamic elements
+
+        // --- Utility Functions ---
+
+        // Function to generate a UUID (for step IDs within the JSON)
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0,
+                    v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Function to display messages to the user
+        function showMessage(msg, type = 'info') {
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000); // Hide after 5 seconds
+        }
+
+        // --- Supabase Data Fetching ---
+
+        // Fetches categories from Supabase and populates the dropdown
+        async function fetchCategories() {
+            showMessage('Loading categories...', 'info');
+            const { data, error } = await supabase
+                .from('categories')
+                .select('id, name') // Assuming your categories table has 'id' and 'name'
+                .order('name', { ascending: true }); // Order by name for better UX
+
+            if (error) {
+                console.error('Error fetching categories:', error.message);
+                showMessage(`Error loading categories: ${error.message}`, 'error');
+                return;
+            }
+
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+            showMessage('Categories loaded.', 'success');
+        }
+
+        // --- Dynamic Step Management ---
+
+        // Adds a new block of input fields for a step
+        function addStepBlock() {
+            stepCounter++; // Increment unique ID for this step block
+
+            const stepDiv = document.createElement('div');
+            stepDiv.classList.add('step-item');
+            stepDiv.dataset.stepIndex = stepCounter; // Store original index
+
+            stepDiv.innerHTML = `
+                <h3>Step <span class="display-step-number">${stepCounter}</span>
+                    <button type="button" class="remove-step">Remove</button>
+                </h3>
+                <div class="form-group">
+                    <label for="step_number_${stepCounter}">Step Number:</label>
+                    <input type="number" id="step_number_${stepCounter}" class="step-number-input" value="${stepCounter}" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="instruction_${stepCounter}">Instruction:</label>
+                    <textarea id="instruction_${stepCounter}" class="instruction-input" rows="3" required placeholder="Describe this step."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="image_url_${stepCounter}">Image URL (Optional):</label>
+                    <input type="url" id="image_url_${stepCounter}" class="image-url-input" placeholder="e.g., https://example.com/step1.jpg">
+                </div>
+            `;
+            stepsContainer.appendChild(stepDiv);
+
+            // Attach event listener for the remove button
+            stepDiv.querySelector('.remove-step').addEventListener('click', () => {
+                stepDiv.remove();
+                updateStepBlockNumbers(); // Re-number remaining steps
+            });
+        }
+
+        // Updates the displayed step numbers and input IDs/names after removal
+        function updateStepBlockNumbers() {
+            const stepItems = document.querySelectorAll('.step-item');
+            stepItems.forEach((item, index) => {
+                const currentDisplayNumber = index + 1;
+                const originalIndex = item.dataset.stepIndex; // Use original index for input IDs if needed, or update them all
+
+                item.querySelector('.display-step-number').textContent = currentDisplayNumber;
+                
+                // Update specific input attributes to match new logical order
+                item.querySelector('.step-number-input').id = `step_number_${originalIndex}`; // Keep original ID for consistency or change
+                item.querySelector('.step-number-input').value = currentDisplayNumber; // Update value
+                
+                item.querySelector('.instruction-input').id = `instruction_${originalIndex}`;
+                item.querySelector('.image-url-input').id = `image_url_${originalIndex}`;
+            });
+            // Update the global counter to match the number of current steps if needed for consistency
+            stepCounter = stepItems.length; 
+        }
+
+
+        // --- Form Submission Logic ---
+
+        ailmentForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            showMessage('Submitting ailment data...', 'info');
+
+            // 1. Collect main ailment data
+            const category_id = categorySelect.value;
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const video_url = document.getElementById('video_url').value;
+            const thumbnail = document.getElementById('thumbnail').value;
+            const isActive = document.getElementById('isActive').checked;
+            const warning_text = document.getElementById('warning_text').value;
+
+            // Basic validation for required fields
+            if (!category_id) {
+                showMessage('Please select a category.', 'error');
+                return;
+            }
+            if (!title.trim()) {
+                showMessage('Please enter a title for the ailment.', 'error');
+                return;
+            }
+
+            // 2. Collect all step data into an array of objects
+            const collectedSteps = [];
+            const stepItems = document.querySelectorAll('.step-item');
+            if (stepItems.length === 0) {
+                 showMessage('Please add at least one step.', 'error');
+                 return;
+            }
+
+            stepItems.forEach(item => {
+                const stepNumber = parseInt(item.querySelector('.step-number-input').value);
+                const instruction = item.querySelector('.instruction-input').value;
+                const imageUrl = item.querySelector('.image-url-input').value;
+
+                // Validate individual step fields
+                if (isNaN(stepNumber) || stepNumber < 1) {
+                    throw new Error('Invalid step number detected.');
+                }
+                if (!instruction.trim()) {
+                    throw new Error('Step instruction cannot be empty.');
+                }
+
+                collectedSteps.push({
+                    id: generateUUID(), // Generate a unique UUID for each step in the JSON
+                    // ailment_id will be added after the main ailment is inserted
+                    step_number: stepNumber,
+                    instruction: instruction,
+                    image_url: imageUrl || null // Set to null if empty
+                });
+            });
+
+            // Prepare the ailment data for the initial insert
+            const ailmentToInsert = {
+                category_id: parseInt(category_id), // Ensure it's an integer
+                title: title,
+                description: description || null,
+                video_url: video_url || null,
+                thumbnail: thumbnail || null,
+                "isActive": isActive, // Use quotes as "isActive" is a reserved keyword in some contexts
+                warning_text: warning_text || null,
+                // 'steps' column will be updated in a second step after getting the 'ailments.id'
+                steps: [] // Initialize as empty array, will be updated later
+            };
+
+            try {
+                // Step 1: Insert the main ailment record to get its ID
+                const { data: insertedAilments, error: insertError } = await supabase
+                    .from('ailments')
+                    .insert([ailmentToInsert])
+                    .select(); // Use .select() to return the inserted row, including its generated ID
+
+                if (insertError) {
+                    throw insertError;
+                }
+
+                if (!insertedAilments || insertedAilments.length === 0) {
+                    throw new Error('Failed to retrieve the ID of the newly inserted ailment.');
+                }
+
+                const newAilmentId = insertedAilments[0].id; // Get the ID of the just-inserted ailment
+
+                // Step 2: Update the collected steps with the actual ailment_id
+                const finalStepsForJson = collectedSteps.map(step => ({
+                    ...step,
+                    ailment_id: newAilmentId // Assign the ID of the newly created ailment
+                }));
+
+                // Step 3: Update the ailment record with the complete steps JSON
+                const { error: updateStepsError } = await supabase
+                    .from('ailments')
+                    .update({ steps: finalStepsForJson })
+                    .eq('id', newAilmentId); // Target the specific ailment by its ID
+
+                if (updateStepsError) {
+                    throw updateStepsError;
+                }
+
+                showMessage('Ailment and steps added successfully!', 'success');
+                ailmentForm.reset(); // Clear the form fields
+                stepsContainer.innerHTML = ''; // Clear all dynamic step fields
+                stepCounter = 0; // Reset step counter
+                addStepBlock(); // Add back the first step field for convenience
+            } catch (error) {
+                console.error('Submission Error:', error);
+                showMessage(`Error: ${error.message || 'An unexpected error occurred.'}`, 'error');
+            }
+        });
+
+        // --- Initialization ---
+
+        // Load categories and add the first step block when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategories();
+            addStepBlock(); // Add the first step fields on load
+        });
+
+        // --- Event Listeners ---
+        addStepButton.addEventListener('click', addStepBlock);
+
+    </script>
+</body>
+</html>
