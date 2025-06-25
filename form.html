@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Aid Data Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        // Import the Supabase client library
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        window.createClient = createClient;
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .data-label {
+            font-weight: 600;
+            color: #4B5563; /* text-gray-600 */
+        }
+        .data-value {
+            color: #1F2937; /* text-gray-800 */
+            word-break: break-word;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3B82F6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-900">First-Aid Supabase Data Viewer</h1>
+            <p class="text-md text-gray-600 mt-2">This page fetches and displays data from your `categories`, `ailments`, and `steps` tables for verification.</p>
+        </header>
+
+        <!-- Status/Loader Section -->
+        <div id="status-container" class="text-center py-12">
+            <div class="loader mx-auto"></div>
+            <p class="mt-4 text-lg font-medium text-gray-700">Fetching data from Supabase...</p>
+        </div>
+
+        <!-- Main Content Area -->
+        <main id="content-container" class="hidden">
+            <!-- Data will be dynamically inserted here -->
+        </main>
+    </div>
+
+    <script type="module">
+    // --- Supabase Configuration ---
+    const SUPABASE_URL = 'https://filhobbagaommhywosor.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbGhvYmJhZ2FvbW1oeXdvc29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNzA4OTksImV4cCI6MjA2NTY0Njg5OX0.e02Xve63kjUjtwwHMo3M4TuWx3h_xlnS89c1GEILUUE';
+    const supabase = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const contentContainer = document.getElementById('content-container');
+    const statusContainer = document.getElementById('status-container');
+
+    async function fetchAllData() {
+        const [categoriesResponse, ailmentsResponse, stepsResponse] = await Promise.all([
+            supabase.from('categories').select('*'),
+            supabase.from('ailments').select('*'),
+            supabase.from('steps').select('*')
+        ]);
+        if (categoriesResponse.error) throw new Error(`Categories Error: ${categoriesResponse.error.message}`);
+        if (ailmentsResponse.error) throw new Error(`Ailments Error: ${ailmentsResponse.error.message}`);
+        if (stepsResponse.error) throw new Error(`Steps Error: ${stepsResponse.error.message}`);
+        return {
+            categories: categoriesResponse.data,
+            ailments: ailmentsResponse.data,
+            steps: stepsResponse.data
+        };
+    }
+
+    function structureData(data) {
+        const { categories, ailments, steps } = data;
+        for (const ailment of ailments) {
+            ailment.steps = steps
+                .filter(step => step.ailment_id === ailment.id)
+                .sort((a, b) => a.step_number - b.step_number);
+        }
+        const ailmentsMap = new Map();
+        for (const ailment of ailments) {
+            if (!ailmentsMap.has(ailment.category_id)) {
+                ailmentsMap.set(ailment.category_id, []);
+            }
+            ailmentsMap.get(ailment.category_id).push(ailment);
+        }
+        for (const category of categories) {
+            category.ailments = ailmentsMap.get(category.id) || [];
+        }
+        return categories;
+    }
+
+    let allCategories = [];
+    let selectedCategoryId = null;
+
+    // Update your renderData function to accept a category filter
+    function renderData(structuredData, filterCategoryId = null) {
+        let html = '';
+
+        // --- Category Dropdown ---
+        html += `
+            <div class="mb-6">
+                <label for="category-select" class="font-semibold mr-2">Select Category:</label>
+                <select id="category-select" class="border rounded px-2 py-1">
+                    <option value="">-- All Categories --</option>
+                    ${structuredData.map(cat => `
+                        <option value="${cat.id}" ${filterCategoryId == cat.id ? 'selected' : ''}>${cat.title}</option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+
+        // Filter categories if a specific one is selected
+        const categoriesToShow = filterCategoryId
+            ? structuredData.filter(cat => cat.id == filterCategoryId)
+            : structuredData;
+
+        if (!categoriesToShow || categoriesToShow.length === 0) {
+            html += `<p class="text-center text-red-500 font-semibold">No data found in the 'categories' table. Please add data to Supabase first.</p>`;
+            contentContainer.innerHTML = html;
+            return;
+        }
+
+        for (const category of categoriesToShow) {
+            html += `
+                <div class="bg-white shadow-lg rounded-lg mb-8 p-6">
+                    <h2 class="text-2xl font-bold text-blue-600 border-b-2 pb-2 mb-4">
+                       Category: ${category.title || 'N/A'}
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <p><span class="data-label">ID:</span> <span class="data-value">${category.id}</span></p>
+                        <p><span class="data-label">Icon:</span> <span class="data-value">${category.icon || 'N/A'}</span></p>
+                        <p><span class="data-label">Description:</span> <span class="data-value">${category.description || 'N/A'}</span></p>
+                        <p><span class="data-label">Color:</span> <span class="data-value flex items-center">${category.color || 'N/A'} <span class="inline-block w-4 h-4 rounded ml-2 border" style="background-color: ${category.color};"></span></span></p>
+                        <p><span class="data-label">Is Active:</span> <span class="data-value">${category.isActive}</span></p>
+                    </div>
+                    <div class="mt-6 pl-4 border-l-4 border-blue-200">
+            `;
+            if (category.ailments.length > 0) {
+                for (const ailment of category.ailments) {
+                    html += `
+                        <div class="bg-gray-50 shadow-md rounded-lg p-4 mb-4" data-ailment-id="${ailment.id}">
+                            <form class="ailment-form" data-ailment-id="${ailment.id}">
+                                <div class="flex justify-between items-center">
+                                    <input type="text" name="title" class="font-semibold text-green-700 bg-transparent ailment-edit-field" value="${ailment.title || ''}" readonly style="font-size:1.25rem; width:70%">
+                                    <button type="button" class="edit-ailment-btn text-blue-600 underline" data-ailment-id="${ailment.id}">Edit</button>
+                                    <button type="submit" class="save-ailment-btn text-green-700 underline hidden" data-ailment-id="${ailment.id}">Save</button>
+                                    <button type="button" class="cancel-ailment-btn text-gray-500 underline hidden" data-ailment-id="${ailment.id}">Cancel</button>
+                                </div>
+                                <div class="mt-2 text-sm space-y-1">
+                                    <p><span class="data-label">ID:</span> <span class="data-value">${ailment.id}</span></p>
+                                    <p><span class="data-label">Description:</span>
+                                        <div class="ailment-desc-readonly bg-transparent w-full" style="white-space:pre-line;">${ailment.description || ''}</div>
+                                        <textarea name="description" class="ailment-edit-field bg-transparent w-full hidden" rows="2">${ailment.description || ''}</textarea>
+                                    </p>
+                                    <p><span class="data-label">Video URL:</span>
+                                        <input type="url" name="video_url" class="ailment-edit-field bg-transparent w-full" value="${ailment.video_url || ''}" readonly>
+                                    </p>
+                                    <p><span class="data-label">Thumbnail:</span>
+                                        <input type="url" name="thumbnail" class="ailment-edit-field bg-transparent w-full" value="${ailment.thumbnail || ''}" readonly>
+                                    </p>
+                                    <p><span class="data-label">Is Active:</span>
+                                        <input type="checkbox" name="isActive" class="ailment-edit-field" ${ailment.isActive ? 'checked' : ''} disabled>
+                                    </p>
+                                    <p class="text-red-600"><span class="data-label">Warning Text:</span>
+                                        <div class="ailment-warning-readonly bg-transparent w-full" style="white-space:pre-line;">${ailment.warning_text || ''}</div>
+                                        <textarea name="warning_text" class="ailment-edit-field bg-transparent w-full hidden" rows="1">${ailment.warning_text || ''}</textarea>
+                                    </p>
+                                </div>
+                            </form>
+                            <div class="mt-4 pl-4 border-l-4 border-green-200">
+                                <h4 class="font-bold text-purple-800 mb-2">Steps:</h4>
+                    `;
+                    if (ailment.steps && ailment.steps.length > 0) {
+                        for (const step of ailment.steps) {
+                            html += `
+                                <form class="step-form bg-white rounded p-3 mb-2 shadow-sm" data-step-id="${step.id}">
+                                    <div class="flex justify-between items-center">
+                                        <input type="number" name="step_number" class="step-edit-field font-semibold text-gray-800 bg-transparent" value="${step.step_number}" readonly style="width:60px">
+                                        <button type="button" class="edit-step-btn text-blue-600 underline" data-step-id="${step.id}">Edit</button>
+                                        <button type="submit" class="save-step-btn text-green-700 underline hidden" data-step-id="${step.id}">Save</button>
+                                        <button type="button" class="cancel-step-btn text-gray-500 underline hidden" data-step-id="${step.id}">Cancel</button>
+                                    </div>
+                                    <div class="text-sm space-y-1 mt-1">
+                                        <p><span class="data-label">Instruction:</span>
+                                            <div class="step-instruction-readonly bg-transparent w-full" style="white-space:pre-line;">${step.instruction || ''}</div>
+                                            <textarea name="instruction" class="step-edit-field bg-transparent w-full hidden" rows="2">${step.instruction || ''}</textarea>
+                                        </p>
+                                        <p><span class="data-label">Image URL:</span>
+                                            <input type="url" name="image_url" class="step-edit-field bg-transparent w-full" value="${step.image_url || ''}" readonly>
+                                        </p>
+                                        <p><span class="data-label">Video URL:</span>
+                                            <input type="url" name="video_url" class="step-edit-field bg-transparent w-full" value="${step.video_url || ''}" readonly>
+                                        </p>
+                                    </div>
+                                </form>
+                            `;
+                        }
+                    } else {
+                        html += `<p class="text-gray-500 italic">No steps found for this ailment.</p>`;
+                    }
+                    html += `</div></div>`; // Close steps container and ailment card
+                }
+            } else {
+                html += `<p class="text-gray-500 italic">No ailments found for this category.</p>`;
+            }
+            html += `</div></div>`; // Close ailments container and category card
+        }
+        contentContainer.innerHTML = html;
+
+        // --- Dropdown change event ---
+        const dropdown = document.getElementById('category-select');
+        if (dropdown) {
+            dropdown.addEventListener('change', function () {
+                selectedCategoryId = this.value || null;
+                renderData(allCategories, selectedCategoryId);
+            });
+        }
+
+        // --- Ailment Edit/Save/Cancel ---
+        document.querySelectorAll('.edit-ailment-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('.ailment-form');
+                // Show editable fields
+                form.querySelectorAll('.ailment-edit-field').forEach(f => {
+                    if (f.tagName === 'TEXTAREA') {
+                        f.classList.remove('hidden');
+                    } else {
+                        f.removeAttribute('readonly');
+                        if (f.type === 'checkbox') f.removeAttribute('disabled');
+                    }
+                });
+                // Hide readonly divs
+                form.querySelectorAll('.ailment-desc-readonly, .ailment-warning-readonly').forEach(d => d.classList.add('hidden'));
+                btn.classList.add('hidden');
+                form.querySelector('.save-ailment-btn').classList.remove('hidden');
+                form.querySelector('.cancel-ailment-btn').classList.remove('hidden');
+            });
+        });
+        document.querySelectorAll('.cancel-ailment-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                renderData(allCategories, selectedCategoryId); // Re-render to revert changes
+            });
+        });
+        document.querySelectorAll('.ailment-form').forEach(form => {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = form.dataset.ailmentId;
+                const formData = new FormData(form);
+                const updateObj = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    video_url: formData.get('video_url'),
+                    thumbnail: formData.get('thumbnail'),
+                    isActive: form.querySelector('input[name="isActive"]').checked,
+                    warning_text: formData.get('warning_text')
+                };
+                const { error } = await supabase.from('ailments').update(updateObj).eq('id', id);
+                if (error) {
+                    alert('Failed to update ailment: ' + error.message);
+                } else {
+                    main(); // Refresh data
+                }
+            });
+        });
+
+        // --- Step Edit/Save/Cancel ---
+        document.querySelectorAll('.edit-step-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('.step-form');
+                form.querySelectorAll('.step-edit-field').forEach(f => {
+                    if (f.tagName === 'TEXTAREA') {
+                        f.classList.remove('hidden');
+                    } else {
+                        f.removeAttribute('readonly');
+                    }
+                });
+                form.querySelectorAll('.step-instruction-readonly').forEach(d => d.classList.add('hidden'));
+                btn.classList.add('hidden');
+                form.querySelector('.save-step-btn').classList.remove('hidden');
+                form.querySelector('.cancel-step-btn').classList.remove('hidden');
+            });
+        });
+        document.querySelectorAll('.cancel-step-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                renderData(allCategories, selectedCategoryId); // Re-render to revert changes
+            });
+        });
+        document.querySelectorAll('.step-form').forEach(form => {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = form.dataset.stepId;
+                const formData = new FormData(form);
+                const updateObj = {
+                    step_number: parseInt(formData.get('step_number')),
+                    instruction: formData.get('instruction'),
+                    image_url: formData.get('image_url'),
+                    video_url: formData.get('video_url')
+                };
+                const { error } = await supabase.from('steps').update(updateObj).eq('id', id);
+                if (error) {
+                    alert('Failed to update step: ' + error.message);
+                } else {
+                    main(); // Refresh data
+                }
+            });
+        });
+    }
+
+    // Update your main function to store all categories and use the dropdown
+    async function main() {
+        try {
+            const rawData = await fetchAllData();
+            allCategories = structureData(rawData);
+            renderData(allCategories, selectedCategoryId);
+        } catch (error) {
+            console.error('An error occurred:', error);
+            statusContainer.innerHTML = `<p class="text-center text-red-500 font-semibold">Failed to load data. Check the browser console for details.<br>${error.message}</p>`;
+        } finally {
+            statusContainer.classList.add('hidden');
+            contentContainer.classList.remove('hidden');
+        }
+    }
+
+    main();
+</script>
+
+</body>
+</html>
