@@ -4,49 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Ailment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa; /* Fallback background color */
+            background-image: url('https://source.unsplash.com/random/1920x1080/?abstract,pattern,medical'); /* Placeholder image, replace with your own */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Ensures background stays fixed during scroll */
             color: #343a40;
             line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative; /* Needed for the pseudo-element overlay */
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.95) 100%); /* Subtle white overlay for readability */
+            z-index: -1;
+        }
+        h1, h2 {
+            font-family: 'Poppins', sans-serif;
         }
         .container {
             background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            max-width: 900px;
-            margin: auto;
-            border: 1px solid #e9ecef;
+            padding: 30px 40px; /* Increased padding */
+            border-radius: 15px; /* More rounded corners */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* More prominent shadow */
+            max-width: 950px; /* Increased max-width */
+            margin: 40px auto; /* More vertical margin */
+            border: 1px solid #e0e6ed; /* Softer border */
+            z-index: 1; /* Ensure container is above the background overlay */
         }
         h1, h2 {
             text-align: center;
-            color: #007bff;
-            margin-bottom: 25px;
+            color: #007bff; /* Primary blue for headings */
+            margin-bottom: 30px; /* More space below headings */
+            font-weight: 700; /* Bolder headings */
+        }
+        h2 {
+            font-size: 1.875rem; /* Tailwind text-3xl equivalent */
+            line-height: 2.25rem;
+            color: #10B981; /* Green for "Steps for Treatment" */
+            border-bottom: 2px solid #D1FAE5; /* Light green border */
+            padding-bottom: 15px;
+            margin-top: 30px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px; /* More space between form groups */
         }
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px; /* More space below labels */
             font-weight: 600;
             color: #495057;
+            font-size: 1.05rem;
         }
         input[type="text"],
         input[type="url"],
         input[type="number"],
         textarea,
         select {
-            width: calc(100% - 24px); /* Account for padding and border */
-            padding: 12px;
+            width: 100%;
+            padding: 14px 16px; /* Increased padding */
             border: 1px solid #ced4da;
-            border-radius: 6px;
+            border-radius: 8px; /* Slightly more rounded */
             box-sizing: border-box;
             font-size: 1rem;
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-color: #fcfcfc; /* Slightly off-white background for inputs */
         }
         input[type="text"]:focus,
         input[type="url"]:focus,
@@ -54,105 +92,133 @@
         textarea:focus,
         select:focus {
             border-color: #007bff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none; /* Remove default outline */
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* More prominent focus shadow */
         }
         input[type="checkbox"] {
-            margin-right: 10px;
-            transform: scale(1.2); /* Make checkbox slightly larger */
+            margin-right: 12px;
+            transform: scale(1.3); /* Make checkbox slightly larger */
+            accent-color: #007bff; /* Custom color for checkbox */
         }
         .steps-container {
-            border: 1px dashed #a0aec0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 25px;
-            background-color: #f0f4f8;
+            border: 2px dashed #93C5FD; /* Lighter blue dashed border */
+            padding: 25px; /* More padding */
+            border-radius: 12px; /* More rounded */
+            margin-top: 30px;
+            background-color: #EFF6FF; /* Light blue background */
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); /* Inner shadow */
         }
         .step-item {
             background-color: #ffffff;
-            border: 1px solid #dee2e6;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
+            border: 1px solid #D1FAE5; /* Light green border */
+            padding: 20px; /* More padding */
+            margin-bottom: 20px; /* More space between steps */
+            border-radius: 10px;
             position: relative;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* More shadow */
         }
         .step-item:last-child {
             margin-bottom: 0;
         }
         .step-item h3 {
             margin-top: 0;
-            margin-bottom: 15px;
-            color: #28a745;
+            margin-bottom: 18px; /* More space below step heading */
+            color: #10B981; /* Green for step headings */
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 1.5rem; /* Larger step number */
+            font-weight: 600;
         }
         .step-item .remove-step {
-            background-color: #dc3545;
+            background-color: #EF4444; /* Red for remove button */
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
+            padding: 8px 16px;
+            border-radius: 8px; /* Rounded corners */
             cursor: pointer;
             font-size: 0.9rem;
-            transition: background-color 0.2s ease;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .step-item .remove-step:hover {
-            background-color: #c82333;
+            background-color: #DC2626; /* Darker red on hover */
+            transform: translateY(-1px);
         }
         button[type="submit"], #addStep {
-            background-color: #007bff;
+            background-color: #2563EB; /* Blue for primary actions */
             color: white;
-            padding: 12px 25px;
+            padding: 14px 30px; /* More padding */
             border: none;
-            border-radius: 6px;
+            border-radius: 8px; /* More rounded */
             cursor: pointer;
-            font-size: 1.1rem;
-            margin-top: 25px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
+            font-size: 1.15rem; /* Slightly larger text */
+            margin-top: 30px;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
         }
         button[type="submit"]:hover, #addStep:hover {
-            background-color: #0056b3;
-            transform: translateY(-1px);
+            background-color: #1D4ED8; /* Darker blue on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
         }
         button[type="submit"]:active, #addStep:active {
             transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         #addStep {
-            background-color: #28a745;
-            margin-right: 10px;
+            background-color: #10B981; /* Green for "Add Step" */
+            margin-right: 15px; /* More space if buttons are side-by-side */
         }
         #addStep:hover {
-            background-color: #218838;
+            background-color: #059669; /* Darker green on hover */
         }
         .button-group {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 35px;
         }
         .message {
-            margin-top: 25px;
-            padding: 15px;
-            border-radius: 8px;
+            margin-top: 30px;
+            padding: 18px; /* More padding */
+            border-radius: 10px; /* More rounded */
             font-weight: bold;
             text-align: center;
             border: 1px solid transparent;
-            display: none; /* Hidden by default */
+            display: none;
+            font-size: 1.05rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border-color: #c3e6cb;
+            background-color: #D1FAE5; /* Light green */
+            color: #065F46; /* Dark green text */
+            border-color: #A7F3D0;
         }
         .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border-color: #f5c6cb;
+            background-color: #FEE2E2; /* Light red */
+            color: #991B1B; /* Dark red text */
+            border-color: #FECACA;
         }
         .message.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border-color: #bee5eb;
+            background-color: #DBEAFE; /* Light blue */
+            color: #1E40AF; /* Dark blue text */
+            border-color: #BFDBFE;
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
@@ -164,7 +230,6 @@
                 <label for="category_id">Category:</label>
                 <select id="category_id" required>
                     <option value="">Select a Category</option>
-                    <!-- Categories will be loaded here by JavaScript -->
                 </select>
             </div>
 
@@ -179,7 +244,7 @@
             </div>
 
             <div class="form-group">
-                <label for="video_url">Main Ailment Video URL (Optional):</label>
+                <label for="video_url">Video URL:</label>
                 <input type="url" id="video_url" placeholder="e.g., https://youtube.com/myvideo">
             </div>
 
@@ -193,14 +258,13 @@
                 <textarea id="warning_text" rows="2" placeholder="Any warnings or precautions."></textarea>
             </div>
 
-            <div class="form-group">
+            <div class="form-group flex items-center">
                 <input type="checkbox" id="isActive" checked>
-                <label for="isActive" style="display: inline-block;">Is Active</label>
+                <label for="isActive" class="mb-0 inline-block text-gray-700">Is Active</label>
             </div>
 
             <h2>Steps for Treatment</h2>
             <div id="stepsContainer" class="steps-container">
-                <!-- Dynamic step input fields will be added here -->
             </div>
             <div class="button-group" style="text-align: left;">
                 <button type="button" id="addStep">Add New Step</button>
@@ -214,10 +278,6 @@
         </form>
     </div>
 
-    <!-- IMPORTANT: Place the Supabase CDN script BEFORE your custom script -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Your custom JavaScript code -->
     <script>
         // --- Supabase Configuration ---
         // IMPORTANT: Replace with your actual Supabase URL and Anon Key
@@ -233,9 +293,18 @@
         const categorySelect = document.getElementById('category_id');
         const messageDiv = document.getElementById('message');
 
-        let stepCounter = 0; // To keep track of unique IDs for dynamic step elements
+        let stepCounter = 0; // To keep track of step IDs for dynamic elements
 
         // --- Utility Functions ---
+
+        // Function to generate a UUID (for step IDs within the JSON)
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0,
+                    v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
         // Function to display messages to the user
         function showMessage(msg, type = 'info') {
@@ -276,11 +345,11 @@
 
         // Adds a new block of input fields for a step
         function addStepBlock() {
-            stepCounter++; // Increment for unique element IDs
+            stepCounter++; // Increment unique ID for this step block
 
             const stepDiv = document.createElement('div');
             stepDiv.classList.add('step-item');
-            stepDiv.dataset.stepId = `step-${stepCounter}`; // Assign a unique ID for easier targeting
+            stepDiv.dataset.stepIndex = stepCounter; // Store original index
 
             stepDiv.innerHTML = `
                 <h3>Step <span class="display-step-number">${stepCounter}</span>
@@ -299,8 +368,8 @@
                     <input type="url" id="image_url_${stepCounter}" class="image-url-input" placeholder="e.g., https://example.com/step1.jpg">
                 </div>
                 <div class="form-group">
-                    <label for="step_video_url_${stepCounter}">Step Video URL (Optional):</label>
-                    <input type="url" id="step_video_url_${stepCounter}" class="step-video-url-input" placeholder="e.g., https://example.com/step1_video.mp4">
+                    <label for="video_url_${stepCounter}">Video URL (Optional):</label>
+                    <input type="url" id="video_url_${stepCounter}" class="video-url-input" placeholder="e.g., https://example.com/step1-video.mp4">
                 </div>
             `;
             stepsContainer.appendChild(stepDiv);
@@ -308,25 +377,30 @@
             // Attach event listener for the remove button
             stepDiv.querySelector('.remove-step').addEventListener('click', () => {
                 stepDiv.remove();
-                updateStepBlockNumbers(); // Re-number remaining steps visually
+                updateStepBlockNumbers(); // Re-number remaining steps
             });
         }
 
-        // Updates the displayed step numbers and input values after a step is removed
+        // Updates the displayed step numbers and input IDs/names after removal
         function updateStepBlockNumbers() {
             const stepItems = document.querySelectorAll('.step-item');
             stepItems.forEach((item, index) => {
                 const currentDisplayNumber = index + 1;
-                // Update the visible step number in the heading
+                const originalIndex = item.dataset.stepIndex;
+
                 item.querySelector('.display-step-number').textContent = currentDisplayNumber;
-                
-                // Update the actual value of the step_number input field
-                item.querySelector('.step-number-input').value = currentDisplayNumber; 
+
+                // Update specific input attributes to match new logical order
+                item.querySelector('.step-number-input').id = `step_number_${originalIndex}`;
+                item.querySelector('.step-number-input').value = currentDisplayNumber;
+
+                item.querySelector('.instruction-input').id = `instruction_${originalIndex}`;
+                item.querySelector('.image-url-input').id = `image_url_${originalIndex}`;
+                item.querySelector('.video-url-input').id = `video_url_${originalIndex}`;
             });
-            // Reset the global stepCounter to match the current number of steps,
-            // so new steps added get sequential numbers.
-            stepCounter = stepItems.length; 
+            stepCounter = stepItems.length;
         }
+
 
         // --- Form Submission Logic ---
 
@@ -335,16 +409,16 @@
 
             showMessage('Submitting ailment data...', 'info');
 
-            // 1. Collect main ailment data from the form
+            // 1. Collect main ailment data
             const category_id = categorySelect.value;
             const title = document.getElementById('title').value;
             const description = document.getElementById('description').value;
-            const main_video_url = document.getElementById('video_url').value; // Video URL for the main ailment
+            const video_url = document.getElementById('video_url').value;
             const thumbnail = document.getElementById('thumbnail').value;
             const isActive = document.getElementById('isActive').checked;
             const warning_text = document.getElementById('warning_text').value;
 
-            // Basic client-side validation for required fields
+            // Basic validation for required fields
             if (!category_id) {
                 showMessage('Please select a category.', 'error');
                 return;
@@ -354,97 +428,98 @@
                 return;
             }
 
-            // Prepare the ailment data for insertion into the 'ailments' table
-            const ailmentToInsert = {
-                category_id: parseInt(category_id), // Ensure it's an integer for the foreign key
-                title: title,
-                description: description || null, // Set to null if empty
-                video_url: main_video_url || null, // Set to null if empty
-                thumbnail: thumbnail || null, // Set to null if empty
-                "isActive": isActive, // Use quotes as "isActive" might be a reserved keyword
-                warning_text: warning_text || null // Set to null if empty
-            };
+            // 2. Collect all step data into an array of objects
+            const collectedSteps = [];
+            const stepItems = document.querySelectorAll('.step-item');
+            if (stepItems.length === 0) {
+                 showMessage('Please add at least one step.', 'error');
+                 return;
+            }
 
             try {
-                // Step 1: Insert the main ailment record into 'public.ailments'
-                // We use .select() to get the full inserted row, including its generated 'id'.
-                const { data: insertedAilments, error: insertAilmentError } = await supabase
-                    .from('ailments')
-                    .insert([ailmentToInsert])
-                    .select(); // Important: Supabase needs .select() to return the inserted data
-
-                if (insertAilmentError) {
-                    throw insertAilmentError;
-                }
-
-                if (!insertedAilments || insertedAilments.length === 0) {
-                    throw new Error('Failed to retrieve the ID of the newly inserted ailment. No data returned.');
-                }
-
-                const newAilmentId = insertedAilments[0].id; // Extract the auto-generated ID of the new ailment
-
-                // 2. Collect all step data from the dynamic fields
-                const stepsToInsert = [];
-                const stepItems = document.querySelectorAll('.step-item');
-                
-                if (stepItems.length === 0) {
-                     // If no steps were added, complete the process for the ailment only
-                     showMessage('Ailment added successfully (no steps provided).', 'success');
-                     ailmentForm.reset(); // Clear the main form
-                     stepsContainer.innerHTML = ''; // Clear any existing step fields
-                     stepCounter = 0; // Reset step counter
-                     addStepBlock(); // Add back the first step field for convenience
-                     return; // Exit the function as there are no steps to insert
-                }
-
-                // Iterate over each step item and extract its data
                 stepItems.forEach(item => {
                     const stepNumber = parseInt(item.querySelector('.step-number-input').value);
                     const instruction = item.querySelector('.instruction-input').value;
                     const imageUrl = item.querySelector('.image-url-input').value;
-                    const stepVideoUrl = item.querySelector('.step-video-url-input').value; // Step-specific video URL
+                    const videoUrl = item.querySelector('.video-url-input').value; // Get video URL for steps
 
-                    // Validate individual step fields (basic check)
+                    // Validate individual step fields
                     if (isNaN(stepNumber) || stepNumber < 1) {
-                        throw new Error(`Invalid step number found for a step. Please check all step numbers.`);
+                        throw new Error('Invalid step number detected.');
                     }
                     if (!instruction.trim()) {
-                        throw new Error(`Instruction for step number ${stepNumber} cannot be empty.`);
+                        throw new Error('Step instruction cannot be empty.');
                     }
 
-                    // Push the collected step data into the array, linking it with the newAilmentId
-                    stepsToInsert.push({
-                        ailment_id: newAilmentId, // This links the step to the parent ailment
+                    collectedSteps.push({
+                        id: generateUUID(), // Generate a unique UUID for each step in the JSON
+                        // ailment_id will be added after the main ailment is inserted
                         step_number: stepNumber,
                         instruction: instruction,
-                        image_url: imageUrl || null, // Set to null if empty string
-                        video_url: stepVideoUrl || null // Set to null if empty string
+                        image_url: imageUrl || null, // Set to null if empty
+                        video_url: videoUrl || null // Set to null if empty
                     });
                 });
+            } catch (validationError) {
+                showMessage(`Step Validation Error: ${validationError.message}`, 'error');
+                return;
+            }
 
-                // Step 3: Insert all collected steps into the 'public.steps' table
-                // Supabase can efficiently handle batch inserts when given an array of objects.
-                const { error: insertStepsError } = await supabase
-                    .from('steps')
-                    .insert(stepsToInsert);
 
-                if (insertStepsError) {
-                    throw insertStepsError;
+            // Prepare the ailment data for the initial insert
+            const ailmentToInsert = {
+                category_id: parseInt(category_id), // Ensure it's an integer
+                title: title,
+                description: description || null,
+                video_url: video_url || null,
+                thumbnail: thumbnail || null,
+                "isActive": isActive, // Use quotes as "isActive" is a reserved keyword in some contexts
+                warning_text: warning_text || null,
+                // 'steps' column will be updated in a second step after getting the 'ailments.id'
+                steps: [] // Initialize as empty array, will be updated later
+            };
+
+            try {
+                // Step 1: Insert the main ailment record to get its ID
+                const { data: insertedAilments, error: insertError } = await supabase
+                    .from('ailments')
+                    .insert([ailmentToInsert])
+                    .select(); // Use .select() to return the inserted row, including its generated ID
+
+                if (insertError) {
+                    throw insertError;
                 }
 
-                showMessage('Ailment and all steps added successfully!', 'success');
-                ailmentForm.reset(); // Clear the main form fields
+                if (!insertedAilments || insertedAilments.length === 0) {
+                    throw new Error('Failed to retrieve the ID of the newly inserted ailment.');
+                }
+
+                const newAilmentId = insertedAilments[0].id; // Get the ID of the just-inserted ailment
+
+                // Step 2: Update the collected steps with the actual ailment_id
+                const finalStepsForJson = collectedSteps.map(step => ({
+                    ...step,
+                    ailment_id: newAilmentId // Assign the ID of the newly created ailment
+                }));
+
+                // Step 3: Update the ailment record with the complete steps JSON
+                const { error: updateStepsError } = await supabase
+                    .from('ailments')
+                    .update({ steps: finalStepsForJson })
+                    .eq('id', newAilmentId); // Target the specific ailment by its ID
+
+                if (updateStepsError) {
+                    throw updateStepsError;
+                }
+
+                showMessage('Ailment and steps added successfully!', 'success');
+                ailmentForm.reset(); // Clear the form fields
                 stepsContainer.innerHTML = ''; // Clear all dynamic step fields
-                stepCounter = 0; // Reset the step counter for next entry
+                stepCounter = 0; // Reset step counter
                 addStepBlock(); // Add back the first step field for convenience
             } catch (error) {
                 console.error('Submission Error:', error);
-                let errorMessage = error.message || 'An unexpected error occurred during submission.';
-                // Provide more specific feedback for common Supabase errors if possible
-                if (error.code && error.code.startsWith('23')) { // PostgreSQL error codes (e.g., 23502 for not-null violation)
-                    errorMessage = `Database error: ${error.message}. Please check your input fields.`;
-                }
-                showMessage(`Error: ${errorMessage}`, 'error');
+                showMessage(`Error: ${error.message || 'An unexpected error occurred.'}`, 'error');
             }
         });
 
@@ -453,7 +528,7 @@
         // Load categories and add the first step block when the page loads
         document.addEventListener('DOMContentLoaded', () => {
             fetchCategories();
-            addStepBlock(); // Add the first step fields on page load
+            addStepBlock(); // Add the first step fields on load
         });
 
         // --- Event Listeners ---
