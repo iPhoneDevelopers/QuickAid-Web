@@ -10,22 +10,27 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
         window.createClient = createClient;
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-image: linear-gradient(to right bottom, #e2e8f0, #f0f4f8); /* Subtle gradient background */
+            min-height: 100vh;
+        }
+        h1, h2 {
+            font-family: 'Poppins', sans-serif;
         }
         .data-label {
             font-weight: 600;
-            color: #4B5563; /* text-gray-600 */
+            color: #4A5568; /* text-gray-700 */
         }
         .data-value {
-            color: #1F2937; /* text-gray-800 */
+            color: #2D3748; /* text-gray-800 */
             word-break: break-word;
         }
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3B82F6;
+            border-top: 4px solid #6366F1; /* Indigo 500 */
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -37,30 +42,48 @@
         }
         .editing-field {
             background: #fff !important;
-            border: 1.5px solid #3B82F6 !important; /* Tailwind blue-500 */
+            border: 1.5px solid #6366F1 !important; /* Indigo 500 */
             border-radius: 0.375rem !important;      /* Tailwind rounded-md */
-            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.04);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .editing-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); /* Focus ring with Indigo 500 */
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
 <body class="bg-gray-50">
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-gray-900">First-Aid Supabase Data Viewer</h1>
-            <p class="text-md text-gray-600 mt-2">This page fetches and displays data from your `categories`, `ailments`, and `steps` tables for verification.</p>
+    <div class="container mx-auto p-4 md:p-8 lg:p-10 max-w-6xl">
+        <header class="mb-10 text-center bg-white p-6 rounded-xl shadow-lg">
+            <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">First-Aid Supabase Data Viewer</h1>
+            <p class="text-lg text-gray-600 mt-3 max-w-2xl mx-auto">This page fetches and displays data from your <code class="bg-gray-100 px-1 rounded">categories</code>, <code class="bg-gray-100 px-1 rounded">ailments</code>, and <code class="bg-gray-100 px-1 rounded">steps</code> tables for verification and interactive editing.</p>
         </header>
 
-        <!-- Status/Loader Section -->
-        <div id="status-container" class="text-center py-12">
-            <div class="loader mx-auto"></div>
-            <p class="mt-4 text-lg font-medium text-gray-700">Fetching data from Supabase...</p>
+        <div id="status-container" class="text-center py-20 bg-white rounded-xl shadow-lg">
+            <div class="loader mx-auto mb-6"></div>
+            <p class="mt-4 text-xl font-medium text-gray-700">Fetching data from Supabase...</p>
         </div>
 
-        <!-- Main Content Area -->
         <main id="content-container" class="hidden">
-            <!-- Data will be dynamically inserted here -->
-        </main>
+            </main>
     </div>
 
     <script type="module">
@@ -111,15 +134,14 @@
     let allCategories = [];
     let selectedCategoryId = null;
 
-    // Update your renderData function to accept a category filter
     function renderData(structuredData, filterCategoryId = null) {
         let html = '';
 
         // --- Category Dropdown ---
         html += `
-            <div class="mb-6">
-                <label for="category-select" class="font-semibold mr-2">Select Category:</label>
-                <select id="category-select" class="border rounded px-2 py-1">
+            <div class="mb-8 p-4 bg-white rounded-xl shadow-md flex items-center justify-center">
+                <label for="category-select" class="font-semibold text-lg text-gray-700 mr-4">Filter by Category:</label>
+                <select id="category-select" class="border border-gray-300 rounded-md px-4 py-2 text-gray-800 bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 ease-in-out shadow-sm">
                     <option value="">-- All Categories --</option>
                     ${structuredData.map(cat => `
                         <option value="${cat.id}" ${filterCategoryId == cat.id ? 'selected' : ''}>${cat.title}</option>
@@ -128,99 +150,118 @@
             </div>
         `;
 
-        // Filter categories if a specific one is selected
         const categoriesToShow = filterCategoryId
             ? structuredData.filter(cat => cat.id == filterCategoryId)
             : structuredData;
 
         if (!categoriesToShow || categoriesToShow.length === 0) {
-            html += `<p class="text-center text-red-500 font-semibold">No data found in the 'categories' table. Please add data to Supabase first.</p>`;
+            html += `<p class="text-center text-red-500 font-semibold text-xl bg-white p-8 rounded-xl shadow-lg">No data found in the 'categories' table. Please add data to Supabase first.</p>`;
             contentContainer.innerHTML = html;
             return;
         }
 
         for (const category of categoriesToShow) {
             html += `
-                <div class="bg-white shadow-lg rounded-lg mb-8 p-6">
-                    <h2 class="text-2xl font-bold text-blue-600 border-b-2 pb-2 mb-4">
-                       Category: ${category.title || 'N/A'}
+                <div class="bg-white shadow-xl rounded-xl mb-10 p-8 border-t-4 border-indigo-500 transform transition-transform duration-300 hover:scale-[1.005]">
+                    <h2 class="text-3xl font-bold text-indigo-700 pb-4 mb-6 border-b-2 border-indigo-100 flex items-center">
+                       <svg class="w-8 h-8 mr-3 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 10.586V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                       Category: <span class="ml-2">${category.title || 'N/A'}</span>
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-md">
                         <p><span class="data-label">ID:</span> <span class="data-value">${category.id}</span></p>
                         <p><span class="data-label">Icon:</span> <span class="data-value">${category.icon || 'N/A'}</span></p>
                         <p><span class="data-label">Description:</span> <span class="data-value">${category.description || 'N/A'}</span></p>
-                        <p><span class="data-label">Color:</span> <span class="data-value flex items-center">${category.color || 'N/A'} <span class="inline-block w-4 h-4 rounded ml-2 border" style="background-color: ${category.color};"></span></span></p>
-                        <p><span class="data-label">Is Active:</span> <span class="data-value">${category.isActive}</span></p>
+                        <p><span class="data-label">Color:</span> <span class="data-value flex items-center">${category.color || 'N/A'} <span class="inline-block w-5 h-5 rounded-full ml-2 border border-gray-300 shadow-sm" style="background-color: ${category.color};"></span></span></p>
+                        <p><span class="data-label">Is Active:</span> <span class="data-value">${category.isActive ? 'Yes' : 'No'}</span></p>
                     </div>
-                    <div class="mt-6 pl-4 border-l-4 border-blue-200">
+                    <div class="mt-8 pl-6 border-l-4 border-indigo-200">
             `;
             if (category.ailments.length > 0) {
+                html += `<h3 class="text-2xl font-bold text-green-700 mb-6">Ailments:</h3>`
                 for (const ailment of category.ailments) {
                     html += `
-                        <div class="bg-gray-50 shadow-md rounded-lg p-4 mb-4" data-ailment-id="${ailment.id}">
+                        <div class="bg-gray-50 shadow-md rounded-lg p-6 mb-6 border-l-4 border-green-400" data-ailment-id="${ailment.id}">
                             <form class="ailment-form" data-ailment-id="${ailment.id}">
-                                <div class="flex justify-between items-center">
-                                    <input type="text" name="title" class="font-semibold text-green-700 bg-transparent ailment-edit-field" value="${ailment.title || ''}" readonly style="font-size:1.25rem; width:70%">
-                                    <button type="button" class="edit-ailment-btn text-blue-600 underline" data-ailment-id="${ailment.id}">Edit</button>
-                                    <button type="submit" class="save-ailment-btn text-green-700 underline hidden" data-ailment-id="${ailment.id}">Save</button>
-                                    <button type="button" class="cancel-ailment-btn text-gray-500 underline hidden" data-ailment-id="${ailment.id}">Cancel</button>
+                                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                    <input type="text" name="title" class="font-bold text-2xl text-green-800 bg-transparent ailment-edit-field p-2 rounded-md" value="${ailment.title || ''}" readonly style="flex-grow: 1;">
+                                    <div class="flex gap-2">
+                                        <button type="button" class="edit-ailment-btn bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition-colors duration-200 shadow-md" data-ailment-id="${ailment.id}">Edit</button>
+                                        <button type="submit" class="save-ailment-btn bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors duration-200 shadow-md hidden" data-ailment-id="${ailment.id}">Save</button>
+                                        <button type="button" class="cancel-ailment-btn bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition-colors duration-200 shadow-md hidden" data-ailment-id="${ailment.id}">Cancel</button>
+                                    </div>
                                 </div>
-                                <div class="mt-2 text-sm space-y-1">
+                                <div class="mt-4 text-base space-y-3">
                                     <p><span class="data-label">ID:</span> <span class="data-value">${ailment.id}</span></p>
-                                    <p><span class="data-label">Description:</span>
-                                        <div class="ailment-desc-readonly bg-transparent w-full" style="white-space:pre-line;">${ailment.description || ''}</div>
-                                        <textarea name="description" class="ailment-edit-field bg-transparent w-full hidden" rows="2">${ailment.description || ''}</textarea>
+                                    <div>
+                                        <span class="data-label block mb-1">Description:</span>
+                                        <div class="ailment-desc-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${ailment.description || ''}</div>
+                                        <textarea name="description" class="ailment-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="3">${ailment.description || ''}</textarea>
+                                    </div>
+                                    <div>
+                                        <span class="data-label block mb-1">Video URL:</span>
+                                        <input type="url" name="video_url" class="ailment-edit-field bg-transparent w-full p-2 rounded-md" value="${ailment.video_url || ''}" readonly>
+                                    </div>
+                                    <div>
+                                        <span class="data-label block mb-1">Thumbnail:</span>
+                                        <input type="url" name="thumbnail" class="ailment-edit-field bg-transparent w-full p-2 rounded-md" value="${ailment.thumbnail || ''}" readonly>
+                                    </div>
+                                    <p class="flex items-center">
+                                        <span class="data-label mr-2">Is Active:</span>
+                                        <input type="checkbox" name="isActive" class="ailment-edit-field w-5 h-5 accent-indigo-600" ${ailment.isActive ? 'checked' : ''} disabled>
                                     </p>
-                                    <p><span class="data-label">Video URL:</span>
-                                        <input type="url" name="video_url" class="ailment-edit-field bg-transparent w-full" value="${ailment.video_url || ''}" readonly>
-                                    </p>
-                                    <p><span class="data-label">Thumbnail:</span>
-                                        <input type="url" name="thumbnail" class="ailment-edit-field bg-transparent w-full" value="${ailment.thumbnail || ''}" readonly>
-                                    </p>
-                                    <p><span class="data-label">Is Active:</span>
-                                        <input type="checkbox" name="isActive" class="ailment-edit-field" ${ailment.isActive ? 'checked' : ''} disabled>
-                                    </p>
-                                    <p class="text-red-600"><span class="data-label">Warning Text:</span>
-                                        <div class="ailment-warning-readonly bg-transparent w-full" style="white-space:pre-line;">${ailment.warning_text || ''}</div>
-                                        <textarea name="warning_text" class="ailment-edit-field bg-transparent w-full hidden" rows="1">${ailment.warning_text || ''}</textarea>
-                                    </p>
+                                    <div class="text-red-700 bg-red-50 p-3 rounded-md border border-red-200">
+                                        <span class="data-label block mb-1">Warning Text:</span>
+                                        <div class="ailment-warning-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${ailment.warning_text || ''}</div>
+                                        <textarea name="warning_text" class="ailment-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="2">${ailment.warning_text || ''}</textarea>
+                                    </div>
                                 </div>
                             </form>
-                            <div class="mt-4 pl-4 border-l-4 border-green-200">
-                                <h4 class="font-bold text-purple-800 mb-2">Steps:</h4>
+                            <div class="mt-6 pl-6 border-l-4 border-purple-300">
+                                <h4 class="font-bold text-xl text-purple-800 mb-4 flex items-center">
+                                    <svg class="w-6 h-6 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2h2V1a1 1 0 112 0v2h2a2 2 0 012 2v2H4V5zm3 3V7h2v1H7zm1 5h2v-2H8v2zM5 9v6a2 2 0 002 2h6a2 2 0 002-2V9H5zm10-1H5V5h10v3z" clip-rule="evenodd"></path></svg>
+                                    Steps:
+                                </h4>
                     `;
                     if (ailment.steps && ailment.steps.length > 0) {
                         for (const step of ailment.steps) {
                             html += `
-                                <form class="step-form bg-white rounded p-3 mb-2 shadow-sm" data-step-id="${step.id}">
-                                    <div class="flex justify-between items-center">
-                                        <input type="number" name="step_number" class="step-edit-field font-semibold text-gray-800 bg-transparent" value="${step.step_number}" readonly style="width:60px">
-                                        <button type="button" class="edit-step-btn text-blue-600 underline" data-step-id="${step.id}">Edit</button>
-                                        <button type="submit" class="save-step-btn text-green-700 underline hidden" data-step-id="${step.id}">Save</button>
-                                        <button type="button" class="cancel-step-btn text-gray-500 underline hidden" data-step-id="${step.id}">Cancel</button>
+                                <form class="step-form bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200 transition-transform duration-200 hover:shadow-md" data-step-id="${step.id}">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                        <label class="font-semibold text-lg text-gray-800 flex items-center">
+                                            Step No:
+                                            <input type="number" name="step_number" class="step-edit-field font-semibold text-indigo-700 bg-transparent p-1 rounded-md ml-2" value="${step.step_number}" readonly style="width:70px">
+                                        </label>
+                                        <div class="flex gap-2">
+                                            <button type="button" class="edit-step-btn bg-indigo-400 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-500 transition-colors duration-200" data-step-id="${step.id}">Edit</button>
+                                            <button type="submit" class="save-step-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors duration-200 hidden" data-step-id="${step.id}">Save</button>
+                                            <button type="button" class="cancel-step-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-500 transition-colors duration-200 hidden" data-step-id="${step.id}">Cancel</button>
+                                        </div>
                                     </div>
-                                    <div class="text-sm space-y-1 mt-1">
-                                        <p><span class="data-label">Instruction:</span>
-                                            <div class="step-instruction-readonly bg-transparent w-full" style="white-space:pre-line;">${step.instruction || ''}</div>
-                                            <textarea name="instruction" class="step-edit-field bg-transparent w-full hidden" rows="2">${step.instruction || ''}</textarea>
-                                        </p>
-                                        <p><span class="data-label">Image URL:</span>
-                                            <input type="url" name="image_url" class="step-edit-field bg-transparent w-full" value="${step.image_url || ''}" readonly>
-                                        </p>
-                                        <p><span class="data-label">Video URL:</span>
-                                            <input type="url" name="video_url" class="step-edit-field bg-transparent w-full" value="${step.video_url || ''}" readonly>
-                                        </p>
+                                    <div class="text-sm space-y-2 mt-2">
+                                        <div>
+                                            <span class="data-label block mb-1">Instruction:</span>
+                                            <div class="step-instruction-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${step.instruction || ''}</div>
+                                            <textarea name="instruction" class="step-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="2">${step.instruction || ''}</textarea>
+                                        </div>
+                                        <div>
+                                            <span class="data-label block mb-1">Image URL:</span>
+                                            <input type="url" name="image_url" class="step-edit-field bg-transparent w-full p-2 rounded-md" value="${step.image_url || ''}" readonly>
+                                        </div>
+                                        <div>
+                                            <span class="data-label block mb-1">Video URL:</span>
+                                            <input type="url" name="video_url" class="step-edit-field bg-transparent w-full p-2 rounded-md" value="${step.video_url || ''}" readonly>
+                                        </div>
                                     </div>
                                 </form>
                             `;
                         }
                     } else {
-                        html += `<p class="text-gray-500 italic">No steps found for this ailment.</p>`;
+                        html += `<p class="text-gray-500 italic p-4 bg-white rounded-md">No steps found for this ailment.</p>`;
                     }
                     html += `</div></div>`; // Close steps container and ailment card
                 }
             } else {
-                html += `<p class="text-gray-500 italic">No ailments found for this category.</p>`;
+                html += `<p class="text-gray-500 italic p-4 bg-white rounded-md">No ailments found for this category.</p>`;
             }
             html += `</div></div>`; // Close ailments container and category card
         }
@@ -240,12 +281,14 @@
             btn.addEventListener('click', function () {
                 const form = btn.closest('.ailment-form');
                 form.querySelectorAll('.ailment-edit-field').forEach(f => {
-                    if (f.tagName === 'TEXTAREA' || f.type === 'text' || f.type === 'url') {
+                    if (f.tagName === 'TEXTAREA' || f.type === 'text' || f.type === 'url' || f.type === 'number') {
                         f.classList.remove('hidden');
                         f.classList.add('editing-field');
-                    } else {
+                    }
+                    if (f.type !== 'checkbox') { // Keep checkbox visible, just enable/disable
                         f.removeAttribute('readonly');
-                        if (f.type === 'checkbox') f.removeAttribute('disabled');
+                    } else {
+                        f.removeAttribute('disabled');
                     }
                 });
                 form.querySelectorAll('.ailment-desc-readonly, .ailment-warning-readonly').forEach(d => d.classList.add('hidden'));
@@ -325,7 +368,6 @@
         });
     }
 
-    // Update your main function to store all categories and use the dropdown
     async function main() {
         try {
             const rawData = await fetchAllData();
@@ -333,7 +375,7 @@
             renderData(allCategories, selectedCategoryId);
         } catch (error) {
             console.error('An error occurred:', error);
-            statusContainer.innerHTML = `<p class="text-center text-red-500 font-semibold">Failed to load data. Check the browser console for details.<br>${error.message}</p>`;
+            statusContainer.innerHTML = `<p class="text-center text-red-500 font-semibold text-xl bg-white p-8 rounded-xl shadow-lg">Failed to load data. Check the browser console for details.<br>${error.message}</p>`;
         } finally {
             statusContainer.classList.add('hidden');
             contentContainer.classList.remove('hidden');
