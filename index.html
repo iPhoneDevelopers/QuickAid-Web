@@ -325,6 +325,7 @@
             const { data, error } = await supabase
                 .from('categories')
                 .select('id, title') // Assuming your categories table has 'id' and 'name'
+                .eq('isActive', true)
                 .order('title', { ascending: true }); // Order by name for better UX
 
             if (error) {
