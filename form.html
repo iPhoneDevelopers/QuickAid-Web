@@ -3,206 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Ailment</title>
+    <title>First-Aid Data Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module">
+        // Import the Supabase client library
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        window.createClient = createClient;
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa; /* Fallback background color */
-            background-image: url('https://source.unsplash.com/random/1920x1080/?abstract,pattern,medical'); /* Placeholder image, replace with your own */
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* Ensures background stays fixed during scroll */
-            color: #343a40;
-            line-height: 1.6;
+            background-image: linear-gradient(to right bottom, #e2e8f0, #f0f4f8); /* Subtle gradient background */
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative; /* Needed for the pseudo-element overlay */
-        }
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.95) 100%); /* Subtle white overlay for readability */
-            z-index: -1;
         }
         h1, h2 {
             font-family: 'Poppins', sans-serif;
         }
-        .container {
-            background-color: #ffffff;
-            padding: 30px 40px; /* Increased padding */
-            border-radius: 15px; /* More rounded corners */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* More prominent shadow */
-            max-width: 950px; /* Increased max-width */
-            margin: 40px auto; /* More vertical margin */
-            border: 1px solid #e0e6ed; /* Softer border */
-            z-index: 1; /* Ensure container is above the background overlay */
-        }
-        h1, h2 {
-            text-align: center;
-            color: #007bff; /* Primary blue for headings */
-            margin-bottom: 30px; /* More space below headings */
-            font-weight: 700; /* Bolder headings */
-        }
-        h2 {
-            font-size: 1.875rem; /* Tailwind text-3xl equivalent */
-            line-height: 2.25rem;
-            color: #10B981; /* Green for "Steps for Treatment" */
-            border-bottom: 2px solid #D1FAE5; /* Light green border */
-            padding-bottom: 15px;
-            margin-top: 30px;
-        }
-        .form-group {
-            margin-bottom: 25px; /* More space between form groups */
-        }
-        label {
-            display: block;
-            margin-bottom: 10px; /* More space below labels */
+        .data-label {
             font-weight: 600;
-            color: #495057;
-            font-size: 1.05rem;
+            color: #4A5568; /* text-gray-700 */
         }
-        input[type="text"],
-        input[type="url"],
-        input[type="number"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 14px 16px; /* Increased padding */
-            border: 1px solid #ced4da;
-            border-radius: 8px; /* Slightly more rounded */
-            box-sizing: border-box;
-            font-size: 1rem;
-            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            background-color: #fcfcfc; /* Slightly off-white background for inputs */
+        .data-value {
+            color: #2D3748; /* text-gray-800 */
+            word-break: break-word;
         }
-        input[type="text"]:focus,
-        input[type="url"]:focus,
-        input[type="number"]:focus,
-        textarea:focus,
-        select:focus {
-            border-color: #007bff;
-            outline: none; /* Remove default outline */
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* More prominent focus shadow */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6366F1; /* Indigo 500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
-        input[type="checkbox"] {
-            margin-right: 12px;
-            transform: scale(1.3); /* Make checkbox slightly larger */
-            accent-color: #007bff; /* Custom color for checkbox */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .steps-container {
-            border: 2px dashed #93C5FD; /* Lighter blue dashed border */
-            padding: 25px; /* More padding */
-            border-radius: 12px; /* More rounded */
-            margin-top: 30px;
-            background-color: #EFF6FF; /* Light blue background */
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); /* Inner shadow */
-        }
-        .step-item {
-            background-color: #ffffff;
-            border: 1px solid #D1FAE5; /* Light green border */
-            padding: 20px; /* More padding */
-            margin-bottom: 20px; /* More space between steps */
-            border-radius: 10px;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* More shadow */
-        }
-        .step-item:last-child {
-            margin-bottom: 0;
-        }
-        .step-item h3 {
-            margin-top: 0;
-            margin-bottom: 18px; /* More space below step heading */
-            color: #10B981; /* Green for step headings */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.5rem; /* Larger step number */
-            font-weight: 600;
-        }
-        .step-item .remove-step {
-            background-color: #EF4444; /* Red for remove button */
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px; /* Rounded corners */
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .step-item .remove-step:hover {
-            background-color: #DC2626; /* Darker red on hover */
-            transform: translateY(-1px);
-        }
-        button[type="submit"], #addStep {
-            background-color: #2563EB; /* Blue for primary actions */
-            color: white;
-            padding: 14px 30px; /* More padding */
-            border: none;
-            border-radius: 8px; /* More rounded */
-            cursor: pointer;
-            font-size: 1.15rem; /* Slightly larger text */
-            margin-top: 30px;
-            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            font-weight: 600;
-        }
-        button[type="submit"]:hover, #addStep:hover {
-            background-color: #1D4ED8; /* Darker blue on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-        }
-        button[type="submit"]:active, #addStep:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        #addStep {
-            background-color: #10B981; /* Green for "Add Step" */
-            margin-right: 15px; /* More space if buttons are side-by-side */
-        }
-        #addStep:hover {
-            background-color: #059669; /* Darker green on hover */
-        }
-        .button-group {
-            text-align: center;
-            margin-top: 35px;
-        }
-        .message {
-            margin-top: 30px;
-            padding: 18px; /* More padding */
-            border-radius: 10px; /* More rounded */
-            font-weight: bold;
-            text-align: center;
-            border: 1px solid transparent;
-            display: none;
-            font-size: 1.05rem;
+        .editing-field {
+            background: #fff !important;
+            border: 1.5px solid #6366F1 !important; /* Indigo 500 */
+            border-radius: 0.375rem !important;      /* Tailwind rounded-md */
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease-in-out;
         }
-        .message.success {
-            background-color: #D1FAE5; /* Light green */
-            color: #065F46; /* Dark green text */
-            border-color: #A7F3D0;
-        }
-        .message.error {
-            background-color: #FEE2E2; /* Light red */
-            color: #991B1B; /* Dark red text */
-            border-color: #FECACA;
-        }
-        .message.info {
-            background-color: #DBEAFE; /* Light blue */
-            color: #1E40AF; /* Dark blue text */
-            border-color: #BFDBFE;
+        .editing-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); /* Focus ring with Indigo 500 */
         }
 
         /* Custom scrollbar for better aesthetics */
@@ -222,320 +69,429 @@
         }
     </style>
 </head>
-<body>
-    <div class="container relative">
-        <a href="https://iphonedevelopers.github.io/QuickAid-Web/form.html" class="absolute top-6 right-8 inline-block px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors duration-200 z-10" style="text-decoration:none;">Edit Ailments</a>
-        <h1>Add New Ailment</h1>
-        <form id="ailmentForm">
-            <div class="form-group">
-                <label for="category_id">Category:</label>
-                <select id="category_id" required>
-                    <option value="">Select a Category</option>
-                </select>
-            </div>
+<body class="bg-gray-50">
 
-            <div class="form-group">
-                <label for="title">Title:</label>
-                <input type="text" id="title" required placeholder="e.g., Common Cold Treatment">
-            </div>
+    <div class="container mx-auto p-4 md:p-8 lg:p-10 max-w-6xl">
+        <a href="https://iphonedevelopers.github.io/QuickAid-Web/" class="inline-block mb-6 px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors duration-200" style="text-decoration:none;">&larr; Back to Add Ailment</a>
+        <header class="mb-10 text-center bg-white p-6 rounded-xl shadow-lg">
+            <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">First-Aid Supabase Data Viewer</h1>
+            <p class="text-lg text-gray-600 mt-3 max-w-2xl mx-auto">This page fetches and displays data from your <code class="bg-gray-100 px-1 rounded">categories</code>, <code class="bg-gray-100 px-1 rounded">ailments</code>, and <code class="bg-gray-100 px-1 rounded">steps</code> tables for verification and interactive editing.</p>
+        </header>
 
-            <div class="form-group">
-                <label for="description">Description:</label>
-                <textarea id="description" rows="4" placeholder="Brief description of the ailment and its treatment."></textarea>
-            </div>
+        <div id="status-container" class="text-center py-20 bg-white rounded-xl shadow-lg">
+            <div class="loader mx-auto mb-6"></div>
+            <p class="mt-4 text-xl font-medium text-gray-700">Fetching data from Supabase...</p>
+        </div>
 
-            <div class="form-group">
-                <label for="video_url">Video URL:</label>
-                <input type="url" id="video_url" placeholder="e.g., https://youtube.com/myvideo">
-            </div>
-
-            <div class="form-group">
-                <label for="thumbnail">Thumbnail URL:</label>
-                <input type="url" id="thumbnail" placeholder="e.g., https://example.com/thumbnail.jpg">
-            </div>
-
-            <div class="form-group">
-                <label for="warning_text">Warning Text:</label>
-                <textarea id="warning_text" rows="2" placeholder="Any warnings or precautions."></textarea>
-            </div>
-
-            <div class="form-group flex items-center">
-                <input type="checkbox" id="isActive" checked>
-                <label for="isActive" class="mb-0 inline-block text-gray-700">Is Active</label>
-            </div>
-
-            <h2>Steps for Treatment</h2>
-            <div id="stepsContainer" class="steps-container">
-            </div>
-            <div class="button-group" style="text-align: left;">
-                <button type="button" id="addStep">Add New Step</button>
-            </div>
-
-            <div class="button-group">
-                <button type="submit">Submit Ailment</button>
-            </div>
-
-            <div id="message" class="message"></div>
-        </form>
+        <main id="content-container" class="hidden">
+            </main>
     </div>
 
-    <script>
-        // --- Supabase Configuration ---
-        // IMPORTANT: Replace with your actual Supabase URL and Anon Key
-        const SUPABASE_URL = 'https://filhobbagaommhywosor.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbGhvYmJhZ2FvbW1oeXdvc29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNzA4OTksImV4cCI6MjA2NTY0Njg5OX0.e02Xve63kjUjtwwHMo3M4TuWx3h_xlnS89c1GEILUUE';
+    <script type="module">
+    // --- Supabase Configuration ---
+    const SUPABASE_URL = 'https://filhobbagaommhywosor.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbGhvYmJhZ2FvbW1oeXdvc29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNzA4OTksImV4cCI6MjA2NTY0Njg5OX0.e02Xve63kjUjtwwHMo3M4TuWx3h_xlnS89c1GEILUUE';
+    const supabase = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const contentContainer = document.getElementById('content-container');
+    const statusContainer = document.getElementById('status-container');
 
-        // --- DOM Elements ---
-        const ailmentForm = document.getElementById('ailmentForm');
-        const stepsContainer = document.getElementById('stepsContainer');
-        const addStepButton = document.getElementById('addStep');
-        const categorySelect = document.getElementById('category_id');
-        const messageDiv = document.getElementById('message');
+    async function fetchAllData() {
+        const [categoriesResponse, ailmentsResponse, stepsResponse] = await Promise.all([
+            supabase.from('categories').select('*').eq('isActive', true),
+            supabase.from('ailments').select('*').eq('isActive', true),
+            supabase.from('steps').select('*').eq('isActive', true)
+        ]);
+        if (categoriesResponse.error) throw new Error(`Categories Error: ${categoriesResponse.error.message}`);
+        if (ailmentsResponse.error) throw new Error(`Ailments Error: ${ailmentsResponse.error.message}`);
+        if (stepsResponse.error) throw new Error(`Steps Error: ${stepsResponse.error.message}`);
+        return {
+            categories: categoriesResponse.data,
+            ailments: ailmentsResponse.data,
+            steps: stepsResponse.data
+        };
+    }
 
-        let stepCounter = 0; // To keep track of step IDs for dynamic elements
-
-        // --- Utility Functions ---
-
-        // Function to generate a UUID (for step IDs within the JSON)
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0,
-                    v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
+    function structureData(data) {
+        const { categories, ailments, steps } = data;
+        for (const ailment of ailments) {
+            ailment.steps = steps
+                .filter(step => step.ailment_id === ailment.id)
+                .sort((a, b) => a.step_number - b.step_number);
         }
-
-        // Function to display messages to the user
-        function showMessage(msg, type = 'info') {
-            messageDiv.textContent = msg;
-            messageDiv.className = `message ${type}`;
-            messageDiv.style.display = 'block';
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000); // Hide after 5 seconds
-        }
-
-        // --- Supabase Data Fetching ---
-
-        // Fetches categories from Supabase and populates the dropdown
-        async function fetchCategories() {
-            showMessage('Loading categories...', 'info');
-            const { data, error } = await supabase
-                .from('categories')
-                .select('id, title') // Assuming your categories table has 'id' and 'name'
-                .eq('isActive', true)
-                .order('title', { ascending: true }); // Order by name for better UX
-
-            if (error) {
-                console.error('Error fetching categories:', error.message);
-                showMessage(`Error loading categories: ${error.message}`, 'error');
-                return;
+        const ailmentsMap = new Map();
+        for (const ailment of ailments) {
+            if (!ailmentsMap.has(ailment.category_id)) {
+                ailmentsMap.set(ailment.category_id, []);
             }
+            ailmentsMap.get(ailment.category_id).push(ailment);
+        }
+        for (const category of categories) {
+            category.ailments = ailmentsMap.get(category.id) || [];
+        }
+        return categories;
+    }
 
-            data.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.title;
-                categorySelect.appendChild(option);
-            });
-            showMessage('Categories loaded.', 'success');
+    let allCategories = [];
+    let selectedCategoryId = null;
+
+    function renderData(structuredData, filterCategoryId = null) {
+        let html = '';
+
+        // --- Category Dropdown ---
+        html += `
+            <div class="mb-8 p-4 bg-white rounded-xl shadow-md flex items-center justify-center">
+                <label for="category-select" class="font-semibold text-lg text-gray-700 mr-4">Filter by Category:</label>
+                <select id="category-select" class="border border-gray-300 rounded-md px-4 py-2 text-gray-800 bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition duration-200 ease-in-out shadow-sm">
+                    <option value="">-- All Categories --</option>
+                    ${structuredData.map(cat => `
+                        <option value="${cat.id}" ${filterCategoryId == cat.id ? 'selected' : ''}>${cat.title}</option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+
+        const categoriesToShow = filterCategoryId
+            ? structuredData.filter(cat => cat.id == filterCategoryId)
+            : structuredData;
+
+        if (!categoriesToShow || categoriesToShow.length === 0) {
+            html += `<p class="text-center text-red-500 font-semibold text-xl bg-white p-8 rounded-xl shadow-lg">No data found in the 'categories' table. Please add data to Supabase first.</p>`;
+            contentContainer.innerHTML = html;
+            return;
         }
 
-        // --- Dynamic Step Management ---
-
-        // Adds a new block of input fields for a step
-        function addStepBlock() {
-            stepCounter++; // Increment unique ID for this step block
-
-            const stepDiv = document.createElement('div');
-            stepDiv.classList.add('step-item');
-            stepDiv.dataset.stepIndex = stepCounter; // Store original index
-
-            stepDiv.innerHTML = `
-                <h3>Step <span class="display-step-number">${stepCounter}</span>
-                    <button type="button" class="remove-step">Remove</button>
-                </h3>
-                <div class="form-group">
-                    <label for="step_number_${stepCounter}">Step Number:</label>
-                    <input type="number" id="step_number_${stepCounter}" class="step-number-input" value="${stepCounter}" min="1" required>
-                </div>
-                <div class="form-group">
-                    <label for="instruction_${stepCounter}">Instruction:</label>
-                    <textarea id="instruction_${stepCounter}" class="instruction-input" rows="3" required placeholder="Describe this step."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="image_url_${stepCounter}">Image URL (Optional):</label>
-                    <input type="url" id="image_url_${stepCounter}" class="image-url-input" placeholder="e.g., https://example.com/step1.jpg">
-                </div>
-                <div class="form-group">
-                    <label for="video_url_${stepCounter}">Video URL (Optional):</label>
-                    <input type="url" id="video_url_${stepCounter}" class="video-url-input" placeholder="e.g., https://example.com/step1-video.mp4">
-                </div>
+        for (const category of categoriesToShow) {
+            html += `
+                <div class="bg-white shadow-xl rounded-xl mb-10 p-8 border-t-4 border-indigo-500 transform transition-transform duration-300 hover:scale-[1.005]">
+                    <h2 class="text-3xl font-bold text-indigo-700 pb-4 mb-6 border-b-2 border-indigo-100 flex items-center">
+                       <svg class="w-8 h-8 mr-3 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 10.586V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                       Category: <span class="ml-2">${category.title || 'N/A'}</span>
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-md">
+                        <p><span class="data-label">ID:</span> <span class="data-value">${category.id}</span></p>
+                        <p><span class="data-label">Icon:</span> <span class="data-value">${category.icon || 'N/A'}</span></p>
+                        <p><span class="data-label">Description:</span> <span class="data-value">${category.description || 'N/A'}</span></p>
+                        <p><span class="data-label">Color:</span> <span class="data-value flex items-center">${category.color || 'N/A'} <span class="inline-block w-5 h-5 rounded-full ml-2 border border-gray-300 shadow-sm" style="background-color: ${category.color};"></span></span></p>
+                        <p><span class="data-label">Is Active:</span> <span class="data-value">${category.isActive ? 'Yes' : 'No'}</span></p>
+                    </div>
+                    <div class="mt-8 pl-6 border-l-4 border-indigo-200">
             `;
-            stepsContainer.appendChild(stepDiv);
+            if (category.ailments.length > 0) {
+                html += `<h3 class="text-2xl font-bold text-green-700 mb-6">Ailments:</h3>`
+                for (const ailment of category.ailments) {
+                    html += `
+                        <div class="bg-gray-50 shadow-md rounded-lg p-6 mb-6 border-l-4 border-green-400" data-ailment-id="${ailment.id}">
+                            <form class="ailment-form" data-ailment-id="${ailment.id}">
+                                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                    <input type="text" name="title" class="font-bold text-2xl text-green-800 bg-transparent ailment-edit-field p-2 rounded-md" value="${ailment.title || ''}" readonly style="flex-grow: 1;">
+                                    <div class="flex gap-2">
+                                        <button type="button" class="edit-ailment-btn bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition-colors duration-200 shadow-md" data-ailment-id="${ailment.id}">Edit</button>
+                                        <button type="submit" class="save-ailment-btn bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors duration-200 shadow-md hidden" data-ailment-id="${ailment.id}">Save</button>
+                                        <button type="button" class="cancel-ailment-btn bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition-colors duration-200 shadow-md hidden" data-ailment-id="${ailment.id}">Cancel</button>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-base space-y-3">
+                                    <p><span class="data-label">ID:</span> <span class="data-value">${ailment.id}</span></p>
+                                    <div>
+                                        <span class="data-label block mb-1">Description:</span>
+                                        <div class="ailment-desc-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${ailment.description || ''}</div>
+                                        <textarea name="description" class="ailment-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="3">${ailment.description || ''}</textarea>
+                                    </div>
+                                    <div>
+                                        <span class="data-label block mb-1">Video URL:</span>
+                                        <input type="url" name="video_url" class="ailment-edit-field bg-transparent w-full p-2 rounded-md" value="${ailment.video_url || ''}" readonly>
+                                    </div>
+                                    <div>
+                                        <span class="data-label block mb-1">Thumbnail:</span>
+                                        <input type="url" name="thumbnail" class="ailment-edit-field bg-transparent w-full p-2 rounded-md" value="${ailment.thumbnail || ''}" readonly>
+                                    </div>
+                                    <p class="flex items-center">
+                                        <span class="data-label mr-2">Is Active:</span>
+                                        <input type="checkbox" name="isActive" class="ailment-edit-field w-5 h-5 accent-indigo-600" ${ailment.isActive ? 'checked' : ''} disabled>
+                                    </p>
+                                    <div class="text-red-700 bg-red-50 p-3 rounded-md border border-red-200">
+                                        <span class="data-label block mb-1">Warning Text:</span>
+                                        <div class="ailment-warning-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${ailment.warning_text || ''}</div>
+                                        <textarea name="warning_text" class="ailment-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="2">${ailment.warning_text || ''}</textarea>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="mt-6 pl-6 border-l-4 border-purple-300">
+                                <h4 class="font-bold text-xl text-purple-800 mb-4 flex items-center">
+                                    <svg class="w-6 h-6 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2h2V1a1 1 0 112 0v2h2a2 2 0 012 2v2H4V5zm3 3V7h2v1H7zm1 5h2v-2H8v2zM5 9v6a2 2 0 002 2h6a2 2 0 002-2V9H5zm10-1H5V5h10v3z" clip-rule="evenodd"></path></svg>
+                                    Steps:
+                                </h4>
+                    `;
+                    if (ailment.steps && ailment.steps.length > 0) {
+                        for (const step of ailment.steps) {
+                            html += `
+                                <form class="step-form bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200 transition-transform duration-200 hover:shadow-md" data-step-id="${step.id}">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                        <label class="font-semibold text-lg text-gray-800 flex items-center">
+                                            Step No:
+                                            <input type="number" name="step_number" class="step-edit-field font-semibold text-indigo-700 bg-transparent p-1 rounded-md ml-2" value="${step.step_number}" readonly style="width:70px">
+                                        </label>
+                                        <div class="flex gap-2">
+                                            <button type="button" class="edit-step-btn bg-indigo-400 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-500 transition-colors duration-200" data-step-id="${step.id}">Edit</button>
+                                            <button type="submit" class="save-step-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors duration-200 hidden" data-step-id="${step.id}">Save</button>
+                                            <button type="button" class="cancel-step-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-500 transition-colors duration-200 hidden" data-step-id="${step.id}">Cancel</button>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm space-y-2 mt-2">
+                                        <div>
+                                            <span class="data-label block mb-1">Instruction:</span>
+                                            <div class="step-instruction-readonly bg-transparent w-full p-2 rounded-md" style="white-space:pre-line;">${step.instruction || ''}</div>
+                                            <textarea name="instruction" class="step-edit-field bg-transparent w-full p-2 rounded-md hidden" rows="2">${step.instruction || ''}</textarea>
+                                        </div>
+                                        <div>
+                                            <span class="data-label block mb-1">Image URL:</span>
+                                            <input type="url" name="image_url" class="step-edit-field bg-transparent w-full p-2 rounded-md" value="${step.image_url || ''}" readonly>
+                                        </div>
+                                        <div>
+                                            <span class="data-label block mb-1">Video URL:</span>
+                                            <input type="url" name="video_url" class="step-edit-field bg-transparent w-full p-2 rounded-md" value="${step.video_url || ''}" readonly>
+                                        </div>
+                                    </div>
+                                </form>
+                            `;
+                        }
+                    } else {
+                        html += `<p class="text-gray-500 italic p-4 bg-white rounded-md">No steps found for this ailment.</p>`;
+                    }
+                    html += `</div></div>`; // Close steps container and ailment card
+                }
+            } else {
+                html += `<p class="text-gray-500 italic p-4 bg-white rounded-md">No ailments found for this category.</p>`;
+            }
+            html += `</div></div>`; // Close ailments container and category card
+        }
+        contentContainer.innerHTML = html;
 
-            // Attach event listener for the remove button
-            stepDiv.querySelector('.remove-step').addEventListener('click', () => {
-                stepDiv.remove();
-                updateStepBlockNumbers(); // Re-number remaining steps
+        // --- Dropdown change event ---
+        const dropdown = document.getElementById('category-select');
+        if (dropdown) {
+            dropdown.addEventListener('change', function () {
+                selectedCategoryId = this.value || null;
+                renderData(allCategories, selectedCategoryId);
             });
         }
 
-        // Updates the displayed step numbers and input IDs/names after removal
-        function updateStepBlockNumbers() {
-            const stepItems = document.querySelectorAll('.step-item');
-            stepItems.forEach((item, index) => {
-                const currentDisplayNumber = index + 1;
-                const originalIndex = item.dataset.stepIndex;
-
-                item.querySelector('.display-step-number').textContent = currentDisplayNumber;
-
-                // Update specific input attributes to match new logical order
-                item.querySelector('.step-number-input').id = `step_number_${originalIndex}`;
-                item.querySelector('.step-number-input').value = currentDisplayNumber;
-
-                item.querySelector('.instruction-input').id = `instruction_${originalIndex}`;
-                item.querySelector('.image-url-input').id = `image_url_${originalIndex}`;
-                item.querySelector('.video-url-input').id = `video_url_${originalIndex}`;
+        // --- Ailment Edit/Save/Cancel ---
+        document.querySelectorAll('.edit-ailment-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('.ailment-form');
+                form.querySelectorAll('.ailment-edit-field').forEach(f => {
+                    if (f.tagName === 'TEXTAREA' || f.type === 'text' || f.type === 'url' || f.type === 'number') {
+                        f.classList.remove('hidden');
+                        f.classList.add('editing-field');
+                    }
+                    if (f.type !== 'checkbox') { // Keep checkbox visible, just enable/disable
+                        f.removeAttribute('readonly');
+                    } else {
+                        f.removeAttribute('disabled');
+                    }
+                });
+                form.querySelectorAll('.ailment-desc-readonly, .ailment-warning-readonly').forEach(d => d.classList.add('hidden'));
+                btn.classList.add('hidden');
+                form.querySelector('.save-ailment-btn').classList.remove('hidden');
+                form.querySelector('.cancel-ailment-btn').classList.remove('hidden');
             });
-            stepCounter = stepItems.length;
-        }
+        });
+        document.querySelectorAll('.cancel-ailment-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                renderData(allCategories, selectedCategoryId); // Re-render to revert changes
+            });
+        });
+        document.querySelectorAll('.ailment-form').forEach(form => {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = form.dataset.ailmentId;
+                const formData = new FormData(form);
+                const updateObj = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    video_url: formData.get('video_url'),
+                    thumbnail: formData.get('thumbnail'),
+                    isActive: form.querySelector('input[name="isActive"]').checked,
+                    warning_text: formData.get('warning_text')
+                };
+                const { error } = await supabase.from('ailments').update(updateObj).eq('id', id);
+                if (error) {
+                    alert('Failed to update ailment: ' + error.message);
+                } else {
+                    main(); // Refresh data
+                }
+            });
+        });
 
-
-        // --- Form Submission Logic ---
-
-        ailmentForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent default form submission
-
-            showMessage('Submitting ailment data...', 'info');
-
-            // 1. Collect main ailment data
-            const category_id = categorySelect.value;
-            const title = document.getElementById('title').value;
-            const description = document.getElementById('description').value;
-            const video_url = document.getElementById('video_url').value;
-            const thumbnail = document.getElementById('thumbnail').value;
-            const isActive = document.getElementById('isActive').checked;
-            const warning_text = document.getElementById('warning_text').value;
-
-            // Basic validation for required fields
-            if (!category_id) {
-                showMessage('Please select a category.', 'error');
-                return;
-            }
-            if (!title.trim()) {
-                showMessage('Please enter a title for the ailment.', 'error');
-                return;
-            }
-
-            // 2. Collect all step data into an array of objects
-            const collectedSteps = [];
-            const stepItems = document.querySelectorAll('.step-item');
-            if (stepItems.length === 0) {
-                 showMessage('Please add at least one step.', 'error');
-                 return;
-            }
-
-            try {
-                stepItems.forEach(item => {
-                    const stepNumber = parseInt(item.querySelector('.step-number-input').value);
-                    const instruction = item.querySelector('.instruction-input').value;
-                    const imageUrl = item.querySelector('.image-url-input').value;
-                    const videoUrl = item.querySelector('.video-url-input').value; // Get video URL for steps
-
-                    // Validate individual step fields
-                    if (isNaN(stepNumber) || stepNumber < 1) {
-                        throw new Error('Invalid step number detected.');
+        // --- Step Edit/Save/Cancel ---
+        document.querySelectorAll('.edit-step-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('.step-form');
+                form.querySelectorAll('.step-edit-field').forEach(f => {
+                    if (f.tagName === 'TEXTAREA' || f.type === 'text' || f.type === 'url' || f.type === 'number') {
+                        f.classList.remove('hidden');
+                        f.classList.add('editing-field');
+                    } else {
+                        f.removeAttribute('readonly');
                     }
-                    if (!instruction.trim()) {
-                        throw new Error('Step instruction cannot be empty.');
-                    }
+                });
+                form.querySelectorAll('.step-instruction-readonly').forEach(d => d.classList.add('hidden'));
+                btn.classList.add('hidden');
+                form.querySelector('.save-step-btn').classList.remove('hidden');
+                form.querySelector('.cancel-step-btn').classList.remove('hidden');
+                // Show delete button in edit mode
+                let delBtn = form.querySelector('.delete-step-btn');
+                if (!delBtn) {
+                    delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.textContent = 'Delete';
+                    delBtn.className = 'delete-step-btn bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600 transition-colors duration-200 ml-2';
+                    form.querySelector('.flex.gap-2')?.appendChild(delBtn);
+                    delBtn.addEventListener('click', async function() {
+                        if (confirm('Are you sure you want to delete this step?')) {
+                            const id = form.dataset.stepId;
+                            const { error } = await supabase.from('steps').update({ isActive: false }).eq('id', id);
+                            if (error) {
+                                alert('Failed to delete step: ' + error.message);
+                            } else {
+                                main();
+                            }
+                        }
+                    });
+                } else {
+                    delBtn.classList.remove('hidden');
+                }
+            });
+        });
+        document.querySelectorAll('.cancel-step-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                // Hide delete button on cancel
+                const form = btn.closest('.step-form');
+                const delBtn = form.querySelector('.delete-step-btn');
+                if (delBtn) delBtn.classList.add('hidden');
+                renderData(allCategories, selectedCategoryId); // Re-render to revert changes
+            });
+        });
+        document.querySelectorAll('.step-form').forEach(form => {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = form.dataset.stepId;
+                const formData = new FormData(form);
+                const updateObj = {
+                    step_number: parseInt(formData.get('step_number')),
+                    instruction: formData.get('instruction'),
+                    image_url: formData.get('image_url'),
+                    video_url: formData.get('video_url')
+                };
+                const { error } = await supabase.from('steps').update(updateObj).eq('id', id);
+                if (error) {
+                    alert('Failed to update step: ' + error.message);
+                } else {
+                    main(); // Refresh data
+                }
+            });
+        });
 
-                    collectedSteps.push({
-                        id: generateUUID(), // Generate a unique UUID for each step in the JSON
-                        // ailment_id will be added after the main ailment is inserted
-                        step_number: stepNumber,
-                        instruction: instruction,
-                        image_url: imageUrl || null, // Set to null if empty
-                        video_url: videoUrl || null // Set to null if empty
+        // --- Add Step in Edit Mode ---
+        document.querySelectorAll('.ailment-form').forEach(form => {
+            const ailmentId = form.dataset.ailmentId;
+            const stepsContainer = form.parentElement.querySelector('.mt-6.pl-6');
+            if (!stepsContainer) return;
+            // Add button only if not already present
+            if (!stepsContainer.querySelector('.add-step-btn')) {
+                const addStepBtn = document.createElement('button');
+                addStepBtn.type = 'button';
+                addStepBtn.textContent = '+ Add Step';
+                addStepBtn.className = 'add-step-btn bg-blue-500 text-white px-4 py-2 rounded-md mt-2 mb-4 hover:bg-blue-600 transition-colors duration-200 shadow-md hidden';
+                stepsContainer.appendChild(addStepBtn);
+                // Show button only in edit mode
+                form.querySelector('.edit-ailment-btn').addEventListener('click', function () {
+                    addStepBtn.classList.remove('hidden');
+                });
+                form.querySelector('.cancel-ailment-btn').addEventListener('click', function () {
+                    addStepBtn.classList.add('hidden');
+                });
+                addStepBtn.addEventListener('click', function () {
+                    // Find max step number
+                    let maxStep = 0;
+                    stepsContainer.querySelectorAll('.step-form input[name="step_number"]').forEach(inp => {
+                        maxStep = Math.max(maxStep, parseInt(inp.value) || 0);
+                    });
+                    // Create new step form
+                    const newStepForm = document.createElement('form');
+                    newStepForm.className = 'step-form bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200';
+                    newStepForm.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <label class="font-semibold text-lg text-gray-800 flex items-center">
+                                Step No:
+                                <input type="number" name="step_number" class="step-edit-field font-semibold text-indigo-700 bg-white p-1 rounded-md ml-2 editing-field" value="${maxStep+1}" style="width:70px">
+                            </label>
+                        </div>
+                        <div class="text-sm space-y-2 mt-2">
+                            <div>
+                                <span class="data-label block mb-1">Instruction:</span>
+                                <textarea name="instruction" class="step-edit-field bg-white w-full p-2 rounded-md editing-field" rows="2"></textarea>
+                            </div>
+                            <div>
+                                <span class="data-label block mb-1">Image URL:</span>
+                                <input type="url" name="image_url" class="step-edit-field bg-white w-full p-2 rounded-md editing-field">
+                            </div>
+                            <div>
+                                <span class="data-label block mb-1">Video URL:</span>
+                                <input type="url" name="video_url" class="step-edit-field bg-white w-full p-2 rounded-md editing-field">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button type="submit" class="save-step-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors duration-200">Save</button>
+                            <button type="button" class="cancel-step-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-500 transition-colors duration-200">Cancel</button>
+                        </div>
+                    `;
+                    stepsContainer.appendChild(newStepForm);
+                    // Save new step
+                    newStepForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(newStepForm);
+                        const insertObj = {
+                            ailment_id: parseInt(ailmentId),
+                            step_number: parseInt(formData.get('step_number')),
+                            instruction: formData.get('instruction'),
+                            image_url: formData.get('image_url'),
+                            video_url: formData.get('video_url')
+                        };
+                        const { error } = await supabase.from('steps').insert([insertObj]);
+                        if (error) {
+                            alert('Failed to add step: ' + error.message);
+                        } else {
+                            main();
+                        }
+                    });
+                    // Cancel new step
+                    newStepForm.querySelector('.cancel-step-btn').addEventListener('click', function() {
+                        newStepForm.remove();
                     });
                 });
-            } catch (validationError) {
-                showMessage(`Step Validation Error: ${validationError.message}`, 'error');
-                return;
-            }
-
-
-            // Prepare the ailment data for the initial insert
-            const ailmentToInsert = {
-                category_id: parseInt(category_id), // Ensure it's an integer
-                title: title,
-                description: description || null,
-                video_url: video_url || null,
-                thumbnail: thumbnail || null,
-                "isActive": isActive, // Use quotes as "isActive" is a reserved keyword in some contexts
-                warning_text: warning_text || null,
-                // 'steps' column will be updated in a second step after getting the 'ailments.id'
-                steps: [] // Initialize as empty array, will be updated later
-            };
-
-            try {
-                // Step 1: Insert the main ailment record to get its ID
-                const { data: insertedAilments, error: insertError } = await supabase
-                    .from('ailments')
-                    .insert([ailmentToInsert])
-                    .select(); // Use .select() to return the inserted row, including its generated ID
-
-                if (insertError) {
-                    throw insertError;
-                }
-
-                if (!insertedAilments || insertedAilments.length === 0) {
-                    throw new Error('Failed to retrieve the ID of the newly inserted ailment.');
-                }
-
-                const newAilmentId = insertedAilments[0].id; // Get the ID of the just-inserted ailment
-
-                // Step 2: Update the collected steps with the actual ailment_id
-                const finalStepsForJson = collectedSteps.map(step => ({
-                    ...step,
-                    ailment_id: newAilmentId // Assign the ID of the newly created ailment
-                }));
-
-                // Step 3: Update the ailment record with the complete steps JSON
-                const { error: updateStepsError } = await supabase
-                    .from('ailments')
-                    .update({ steps: finalStepsForJson })
-                    .eq('id', newAilmentId); // Target the specific ailment by its ID
-
-                if (updateStepsError) {
-                    throw updateStepsError;
-                }
-
-                showMessage('Ailment and steps added successfully!', 'success');
-                ailmentForm.reset(); // Clear the form fields
-                stepsContainer.innerHTML = ''; // Clear all dynamic step fields
-                stepCounter = 0; // Reset step counter
-                addStepBlock(); // Add back the first step field for convenience
-            } catch (error) {
-                console.error('Submission Error:', error);
-                showMessage(`Error: ${error.message || 'An unexpected error occurred.'}`, 'error');
             }
         });
+    }
 
-        // --- Initialization ---
+    async function main() {
+        try {
+            const rawData = await fetchAllData();
+            allCategories = structureData(rawData);
+            renderData(allCategories, selectedCategoryId);
+        } catch (error) {
+            console.error('An error occurred:', error);
+            statusContainer.innerHTML = `<p class="text-center text-red-500 font-semibold text-xl bg-white p-8 rounded-xl shadow-lg">Failed to load data. Check the browser console for details.<br>${error.message}</p>`;
+        } finally {
+            statusContainer.classList.add('hidden');
+            contentContainer.classList.remove('hidden');
+        }
+    }
 
-        // Load categories and add the first step block when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchCategories();
-            addStepBlock(); // Add the first step fields on load
-        });
+    main();
+</script>
 
-        // --- Event Listeners ---
-        addStepButton.addEventListener('click', addStepBlock);
-
-    </script>
 </body>
 </html>
