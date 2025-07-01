@@ -98,9 +98,9 @@
 
     async function fetchAllData() {
         const [categoriesResponse, ailmentsResponse, stepsResponse] = await Promise.all([
-            supabase.from('categories').select('*'),
-            supabase.from('ailments').select('*'),
-            supabase.from('steps').select('*')
+            supabase.from('categories').select('*').eq('isActive', true),
+            supabase.from('ailments').select('*').eq('isActive', true),
+            supabase.from('steps').select('*').eq('isActive', true)
         ]);
         if (categoriesResponse.error) throw new Error(`Categories Error: ${categoriesResponse.error.message}`);
         if (ailmentsResponse.error) throw new Error(`Ailments Error: ${ailmentsResponse.error.message}`);
@@ -341,10 +341,36 @@
                 btn.classList.add('hidden');
                 form.querySelector('.save-step-btn').classList.remove('hidden');
                 form.querySelector('.cancel-step-btn').classList.remove('hidden');
+                // Show delete button in edit mode
+                let delBtn = form.querySelector('.delete-step-btn');
+                if (!delBtn) {
+                    delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.textContent = 'Delete';
+                    delBtn.className = 'delete-step-btn bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600 transition-colors duration-200 ml-2';
+                    form.querySelector('.flex.gap-2')?.appendChild(delBtn);
+                    delBtn.addEventListener('click', async function() {
+                        if (confirm('Are you sure you want to delete this step?')) {
+                            const id = form.dataset.stepId;
+                            const { error } = await supabase.from('steps').update({ isActive: false }).eq('id', id);
+                            if (error) {
+                                alert('Failed to delete step: ' + error.message);
+                            } else {
+                                main();
+                            }
+                        }
+                    });
+                } else {
+                    delBtn.classList.remove('hidden');
+                }
             });
         });
         document.querySelectorAll('.cancel-step-btn').forEach(btn => {
             btn.addEventListener('click', function () {
+                // Hide delete button on cancel
+                const form = btn.closest('.step-form');
+                const delBtn = form.querySelector('.delete-step-btn');
+                if (delBtn) delBtn.classList.add('hidden');
                 renderData(allCategories, selectedCategoryId); // Re-render to revert changes
             });
         });
@@ -366,6 +392,87 @@
                     main(); // Refresh data
                 }
             });
+        });
+
+        // --- Add Step in Edit Mode ---
+        document.querySelectorAll('.ailment-form').forEach(form => {
+            const ailmentId = form.dataset.ailmentId;
+            const stepsContainer = form.parentElement.querySelector('.mt-6.pl-6');
+            if (!stepsContainer) return;
+            // Add button only if not already present
+            if (!stepsContainer.querySelector('.add-step-btn')) {
+                const addStepBtn = document.createElement('button');
+                addStepBtn.type = 'button';
+                addStepBtn.textContent = '+ Add Step';
+                addStepBtn.className = 'add-step-btn bg-blue-500 text-white px-4 py-2 rounded-md mt-2 mb-4 hover:bg-blue-600 transition-colors duration-200 shadow-md hidden';
+                stepsContainer.appendChild(addStepBtn);
+                // Show button only in edit mode
+                form.querySelector('.edit-ailment-btn').addEventListener('click', function () {
+                    addStepBtn.classList.remove('hidden');
+                });
+                form.querySelector('.cancel-ailment-btn').addEventListener('click', function () {
+                    addStepBtn.classList.add('hidden');
+                });
+                addStepBtn.addEventListener('click', function () {
+                    // Find max step number
+                    let maxStep = 0;
+                    stepsContainer.querySelectorAll('.step-form input[name="step_number"]').forEach(inp => {
+                        maxStep = Math.max(maxStep, parseInt(inp.value) || 0);
+                    });
+                    // Create new step form
+                    const newStepForm = document.createElement('form');
+                    newStepForm.className = 'step-form bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200';
+                    newStepForm.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <label class="font-semibold text-lg text-gray-800 flex items-center">
+                                Step No:
+                                <input type="number" name="step_number" class="step-edit-field font-semibold text-indigo-700 bg-white p-1 rounded-md ml-2 editing-field" value="${maxStep+1}" style="width:70px">
+                            </label>
+                        </div>
+                        <div class="text-sm space-y-2 mt-2">
+                            <div>
+                                <span class="data-label block mb-1">Instruction:</span>
+                                <textarea name="instruction" class="step-edit-field bg-white w-full p-2 rounded-md editing-field" rows="2"></textarea>
+                            </div>
+                            <div>
+                                <span class="data-label block mb-1">Image URL:</span>
+                                <input type="url" name="image_url" class="step-edit-field bg-white w-full p-2 rounded-md editing-field">
+                            </div>
+                            <div>
+                                <span class="data-label block mb-1">Video URL:</span>
+                                <input type="url" name="video_url" class="step-edit-field bg-white w-full p-2 rounded-md editing-field">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button type="submit" class="save-step-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors duration-200">Save</button>
+                            <button type="button" class="cancel-step-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-500 transition-colors duration-200">Cancel</button>
+                        </div>
+                    `;
+                    stepsContainer.appendChild(newStepForm);
+                    // Save new step
+                    newStepForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(newStepForm);
+                        const insertObj = {
+                            ailment_id: parseInt(ailmentId),
+                            step_number: parseInt(formData.get('step_number')),
+                            instruction: formData.get('instruction'),
+                            image_url: formData.get('image_url'),
+                            video_url: formData.get('video_url')
+                        };
+                        const { error } = await supabase.from('steps').insert([insertObj]);
+                        if (error) {
+                            alert('Failed to add step: ' + error.message);
+                        } else {
+                            main();
+                        }
+                    });
+                    // Cancel new step
+                    newStepForm.querySelector('.cancel-step-btn').addEventListener('click', function() {
+                        newStepForm.remove();
+                    });
+                });
+            }
         });
     }
 
