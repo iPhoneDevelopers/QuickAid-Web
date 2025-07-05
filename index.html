@@ -498,20 +498,20 @@
 
                 const newAilmentId = insertedAilments[0].id; // Get the ID of the just-inserted ailment
 
-                // Step 2: Update the collected steps with the actual ailment_id
-                const finalStepsForJson = collectedSteps.map(step => ({
+                // Step 2: Insert each step as a separate row in the steps table
+                // Remove 'id' property if present, let DB handle step id
+                const stepsToInsert = collectedSteps.map(({id, ...step}) => ({
                     ...step,
                     ailment_id: newAilmentId // Assign the ID of the newly created ailment
                 }));
 
-                // Step 3: Update the ailment record with the complete steps JSON
-                const { error: updateStepsError } = await supabase
-                    .from('ailments')
-                    .update({ steps: finalStepsForJson })
-                    .eq('id', newAilmentId); // Target the specific ailment by its ID
+                // Insert all steps in one call
+                const { error: stepsInsertError } = await supabase
+                    .from('steps')
+                    .insert(stepsToInsert);
 
-                if (updateStepsError) {
-                    throw updateStepsError;
+                if (stepsInsertError) {
+                    throw stepsInsertError;
                 }
 
                 showMessage('Ailment and steps added successfully!', 'success');
